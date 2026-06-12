@@ -2,7 +2,7 @@
 title: "Transcription pipeline — record and import paths to stored transcript"
 models: "crates/core/src/audio, crates/core/src/engine, crates/core/src/store"
 source_of_truth: diagram
-last_verified: f9ae2a3 2026-06-12
+last_verified: 4260270 2026-06-12
 diagram_type: flowchart
 ---
 
@@ -16,10 +16,11 @@ transcription is v0.2).
 The `engine/` subgraph is implemented (`crates/core/src/engine/whisper.rs`);
 the job queue lives in the IPC shell's job runner, not the core engine — the
 engine is a blocking call that the runner's dedicated thread drives. The
-file-import path of `audio/` is implemented
+`audio/` subgraph is implemented: file import
 (`crates/core/src/audio/import.rs`: symphonia decode → mono downmix → rubato
-resample). Mic capture, the archive WAV writer, and `store/` are still
-contract-only; this file stays `source_of_truth: diagram` until they land.
+resample) and mic capture with the archive WAV writer and ~30 Hz levels
+(`crates/core/src/audio/capture.rs`). Only `store/` is still contract-only;
+this file stays `source_of_truth: diagram` until it lands.
 
 ```mermaid
 flowchart LR

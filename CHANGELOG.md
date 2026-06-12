@@ -5,6 +5,10 @@ for the full record see the git log.
 
 ## [Unreleased]
 
+- Microphone capture: device picker enumeration, any input rate/layout
+  downmixed and resampled to 16 kHz mono, live level meter (~30 Hz), and an
+  incrementally-flushed archive WAV so an interrupted recording keeps
+  everything captured so far.
 - Audio import: wav / mp3 / m4a / mp4 / mov / ogg / flac / mkv decode to the
   whisper PCM contract (16 kHz mono f32) via symphonia and rubato, with
   progress, cancellation, per-frame checksum verification, and typed errors

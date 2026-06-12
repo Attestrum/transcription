@@ -39,6 +39,12 @@ pub enum CoreError {
     #[error("file decoded to zero audio samples: {0}")]
     EmptyAudio(PathBuf),
 
+    #[error("audio device: {0}")]
+    AudioDevice(String),
+
+    #[error("capture: {0}")]
+    Capture(String),
+
     #[error("engine: {0}")]
     Engine(String),
 
