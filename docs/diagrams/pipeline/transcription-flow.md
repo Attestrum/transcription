@@ -2,7 +2,7 @@
 title: "Transcription pipeline — record and import paths to stored transcript"
 models: "crates/core/src/audio, crates/core/src/engine, crates/core/src/store"
 source_of_truth: diagram
-last_verified: b774630 2026-06-12
+last_verified: c292568 2026-06-12
 diagram_type: flowchart
 ---
 
@@ -12,6 +12,12 @@ Both input paths converge on one contract: **16 kHz mono f32 PCM** into the
 whisper engine. v1 transcribes after recording stops, but segments stream to
 the UI as whisper emits them, so the result *feels* live (true while-recording
 transcription is v0.2).
+
+The `engine/` subgraph is implemented (`crates/core/src/engine/whisper.rs`);
+the job queue lives in the IPC shell's job runner, not the core engine — the
+engine is a blocking call that the runner's dedicated thread drives. `audio/`
+and `store/` are still contract-only; this file stays `source_of_truth:
+diagram` until they land.
 
 ```mermaid
 flowchart LR
@@ -29,8 +35,11 @@ flowchart LR
 
     PCM(["16 kHz mono f32 PCM"])
 
-    subgraph engine["engine/ (dedicated thread)"]
+    subgraph shell["src-tauri job runner (dedicated thread)"]
         JOB["job queue<br/>(one job_id per run)"]
+    end
+
+    subgraph engine["engine/"]
         WHISPER["whisper-rs full()<br/>Metal on macOS · CPU on Windows"]
         CB_SEG["new_segment callback"]
         CB_PROG["progress callback"]

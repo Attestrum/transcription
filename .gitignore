@@ -17,3 +17,6 @@ vite.config.ts.timestamp-*
 
 # Derived diagram renders (local review only)
 /diagrams-png/
+
+# Test models (downloaded, never committed)
+crates/core/tests/models/

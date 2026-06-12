@@ -27,6 +27,12 @@ pub enum CoreError {
     #[error("unexpected HTTP status {status} from {url}")]
     HttpStatus { status: u16, url: String },
 
+    #[error("model file not found: {0}")]
+    ModelNotFound(PathBuf),
+
+    #[error("engine: {0}")]
+    Engine(String),
+
     #[error("cancelled")]
     Cancelled,
 

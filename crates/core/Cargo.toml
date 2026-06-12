@@ -18,5 +18,12 @@ reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"
 sha2 = "0.10"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "fs", "io-util"] }
 
+[target.'cfg(target_os = "macos")'.dependencies]
+whisper-rs = { version = "0.16", features = ["metal"] }
+
+[target.'cfg(not(target_os = "macos"))'.dependencies]
+whisper-rs = "0.16"
+
 [dev-dependencies]
+hound = "3"
 tiny_http = "0.12"

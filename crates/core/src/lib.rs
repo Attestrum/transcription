@@ -5,6 +5,7 @@
 //! the transcript store, and exporters. The `src-tauri` crate is a thin shell
 //! over this one. Architecture contract: `docs/diagrams/architecture/app-overview.md`.
 
+pub mod engine;
 pub mod error;
 pub mod models;
 
