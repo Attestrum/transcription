@@ -1,8 +1,8 @@
 ---
 title: "On-disk transcript schema — JSON per transcript + sibling WAV"
 models: "crates/core/src/store"
-source_of_truth: diagram
-last_verified: b774630 2026-06-12
+source_of_truth: code
+last_verified: b1bd80d 2026-06-12
 diagram_type: erDiagram
 ---
 

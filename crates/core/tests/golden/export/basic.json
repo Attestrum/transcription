@@ -1,0 +1,24 @@
+{
+  "created_at": "2026-06-12T10:00:00Z",
+  "duration": 11.0,
+  "language": "en",
+  "model": "tiny",
+  "segments": [
+    {
+      "end": 5.46,
+      "id": 0,
+      "speaker": null,
+      "start": 0.0,
+      "text": "And so my fellow Americans,"
+    },
+    {
+      "end": 10.92,
+      "id": 1,
+      "speaker": null,
+      "start": 5.46,
+      "text": "ask not what your country can do for you."
+    }
+  ],
+  "source": "file",
+  "text": "And so my fellow Americans, ask not what your country can do for you."
+}

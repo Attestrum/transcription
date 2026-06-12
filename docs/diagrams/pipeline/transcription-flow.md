@@ -1,8 +1,8 @@
 ---
 title: "Transcription pipeline — record and import paths to stored transcript"
 models: "crates/core/src/audio, crates/core/src/engine, crates/core/src/store"
-source_of_truth: diagram
-last_verified: 4260270 2026-06-12
+source_of_truth: code
+last_verified: b1bd80d 2026-06-12
 diagram_type: flowchart
 ---
 
@@ -13,14 +13,14 @@ whisper engine. v1 transcribes after recording stops, but segments stream to
 the UI as whisper emits them, so the result *feels* live (true while-recording
 transcription is v0.2).
 
-The `engine/` subgraph is implemented (`crates/core/src/engine/whisper.rs`);
-the job queue lives in the IPC shell's job runner, not the core engine — the
-engine is a blocking call that the runner's dedicated thread drives. The
-`audio/` subgraph is implemented: file import
-(`crates/core/src/audio/import.rs`: symphonia decode → mono downmix → rubato
-resample) and mic capture with the archive WAV writer and ~30 Hz levels
-(`crates/core/src/audio/capture.rs`). Only `store/` is still contract-only;
-this file stays `source_of_truth: diagram` until it lands.
+All three subgraphs are implemented and this diagram is now a derived view:
+`engine/` (`crates/core/src/engine/whisper.rs` — the job queue lives in the
+IPC shell's job runner, not the core engine; the engine is a blocking call
+the runner's dedicated thread drives), `audio/`
+(`crates/core/src/audio/import.rs` file import,
+`crates/core/src/audio/capture.rs` mic capture with archive WAV + ~30 Hz
+levels), and `store/` (`crates/core/src/store/`, schema in
+`docs/diagrams/store/transcript-schema.md`).
 
 ```mermaid
 flowchart LR

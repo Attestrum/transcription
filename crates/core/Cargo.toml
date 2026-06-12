@@ -21,6 +21,8 @@ symphonia = { version = "0.6.0", features = ["mp3", "aac", "alac", "isomp4"] }
 rubato = "3.0.0"
 cpal = "0.16"
 hound = "3"
+uuid = { version = "1.23.3", features = ["v4", "serde"] }
+time = { version = "=0.3.47", features = ["serde", "formatting", "parsing", "serde-well-known", "macros"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 whisper-rs = { version = "0.16", features = ["metal"] }

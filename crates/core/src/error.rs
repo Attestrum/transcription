@@ -45,6 +45,12 @@ pub enum CoreError {
     #[error("capture: {0}")]
     Capture(String),
 
+    #[error("transcript not found: {0}")]
+    TranscriptNotFound(String),
+
+    #[error("store: {0}")]
+    Store(String),
+
     #[error("engine: {0}")]
     Engine(String),
 

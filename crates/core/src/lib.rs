@@ -8,7 +8,9 @@
 pub mod audio;
 pub mod engine;
 pub mod error;
+pub mod export;
 pub mod models;
+pub mod store;
 
 pub use error::CoreError;
 

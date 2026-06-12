@@ -5,6 +5,12 @@ for the full record see the git log.
 
 ## [Unreleased]
 
+- Transcript store: one JSON document per transcript (camelCase schema v1,
+  tolerant decode for forward compatibility), atomic writes, sibling-WAV
+  lifecycle, settings with safe defaults, and the edit rule that preserves
+  the engine's original words on first edit.
+- Exporters: TXT, SRT, VTT, and OpenAI-whisper-shape JSON, byte-stable and
+  golden-file tested, matching the original app's proven formatting.
 - Microphone capture: device picker enumeration, any input rate/layout
   downmixed and resampled to 16 kHz mono, live level meter (~30 Hz), and an
   incrementally-flushed archive WAV so an interrupted recording keeps
