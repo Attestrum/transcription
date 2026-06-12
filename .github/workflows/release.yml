@@ -1,0 +1,141 @@
+name: release
+
+# Tag-triggered release pipeline. Builds the macOS (Apple Silicon) dmg and the
+# Windows x64 NSIS installer, then signs every binary keylessly via Sigstore
+# under THIS WORKFLOW'S GitHub Actions OIDC identity — never a personal one.
+# The sign job re-verifies its own signatures and asserts the certificate SAN
+# is this workflow at a v* tag, so a release that wasn't signed by the
+# Attestrum org's CI cannot ship through this path.
+#
+# Users verify with stock cosign (documented in README.md):
+#   cosign verify-blob --bundle <asset>.sigstore.json \
+#     --certificate-identity-regexp '^https://github\.com/Attestrum/transcription/' \
+#     --certificate-oidc-issuer https://token.actions.githubusercontent.com <asset>
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write    # gh release create
+  id-token: write    # ambient GHA OIDC → Fulcio keyless identity
+
+env:
+  PRODUCT: AttestrumTranscription
+
+jobs:
+  build:
+    name: build (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-aarch64
+            os: macos-14
+            bundles: dmg
+          - platform: windows-x64
+            os: windows-latest
+            bundles: nsis
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.89.0
+      - uses: Swatinem/rust-cache@v2
+      - run: npm ci
+      - name: tauri build
+        run: npm run tauri build -- --bundles ${{ matrix.bundles }}
+      - name: Collect + rename artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          mkdir -p dist
+          case "${{ matrix.platform }}" in
+            macos-aarch64)
+              src="$(find target/release/bundle/dmg -name '*.dmg' | head -1)"
+              dest="dist/${PRODUCT}_${version}_macos-aarch64.dmg"
+              ;;
+            windows-x64)
+              src="$(find target/release/bundle/nsis -name '*-setup.exe' | head -1)"
+              dest="dist/${PRODUCT}_${version}_windows-x64-setup.exe"
+              ;;
+          esac
+          test -n "$src"
+          mv "$src" "$dest"
+          ls -la dist/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bundle-${{ matrix.platform }}
+          path: dist/*
+          if-no-files-found: error
+
+  sign-and-release:
+    name: sign (Sigstore keyless, org CI identity) + publish release
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: SHA256SUMS
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum * > "${PRODUCT}_${GITHUB_REF_NAME#v}_SHA256SUMS"
+          cat "${PRODUCT}_${GITHUB_REF_NAME#v}_SHA256SUMS"
+      - uses: sigstore/cosign-installer@v3
+      - name: cosign sign-blob (ambient GHA OIDC, one bundle per binary)
+        run: |
+          set -euo pipefail
+          cd dist
+          for f in *.dmg *-setup.exe; do
+            cosign sign-blob --yes --bundle "${f}.sigstore.json" "$f"
+          done
+      # The identity gate: re-verify our own signatures and assert the cert SAN
+      # is THIS workflow at a v* tag. A signature minted anywhere else —
+      # including a maintainer laptop — fails here and blocks the release.
+      - name: cosign verify-blob (assert org workflow SAN)
+        run: |
+          set -euo pipefail
+          cd dist
+          identity_re='^https://github\.com/Attestrum/transcription/\.github/workflows/release\.yml@refs/tags/v.+$'
+          issuer='https://token.actions.githubusercontent.com'
+          for f in *.dmg *-setup.exe; do
+            cosign verify-blob \
+              --bundle "${f}.sigstore.json" \
+              --certificate-identity-regexp "$identity_re" \
+              --certificate-oidc-issuer "$issuer" \
+              "$f"
+            echo "verified: $f signed by the org release workflow"
+          done
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          prerelease_flag=""
+          case "$GITHUB_REF_NAME" in
+            *-rc*|*-alpha*|*-beta*|v0.0.*) prerelease_flag="--prerelease" ;;
+          esac
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Attestrum Transcription $GITHUB_REF_NAME" \
+            $prerelease_flag \
+            --notes "Downloads for macOS (Apple Silicon) and Windows (x64).
+
+Every binary is signed in this public CI run via Sigstore. Verify with stock cosign:
+
+\`\`\`sh
+cosign verify-blob \\
+  --bundle <asset>.sigstore.json \\
+  --certificate-identity-regexp '^https://github\\.com/Attestrum/transcription/' \\
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \\
+  <asset>
+\`\`\`"
