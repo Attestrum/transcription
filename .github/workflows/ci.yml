@@ -84,7 +84,7 @@ jobs:
       # The core crate is tauri-free by design — no frontendDist stub needed.
       # Scoped to engine:: — other ignored tests (live mic capture) need
       # hardware the runners don't have.
-      - run: cargo test -p attestrum-transcription-core --lib engine:: -- --ignored
+      - run: 'cargo test -p attestrum-transcription-core --lib engine:: -- --ignored'
 
   build-smoke:
     name: build smoke (${{ matrix.os }})
