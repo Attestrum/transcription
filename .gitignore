@@ -20,3 +20,6 @@ vite.config.ts.timestamp-*
 
 # Test models (downloaded, never committed)
 crates/core/tests/models/
+
+# Local handoff notes (never published)
+/.handoffs/
