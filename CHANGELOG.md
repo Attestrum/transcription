@@ -5,6 +5,11 @@ for the full record see the git log.
 
 ## [Unreleased]
 
+- IPC layer: the full command surface (models, recording, transcription
+  jobs with streaming segment/progress events, library CRUD, export,
+  settings) plus a typed TypeScript client (`src/lib/api/`). Transcription
+  runs on dedicated threads, segments coalesce ≤ 50 ms, and every command
+  returns a typed error the UI can narrow on.
 - Transcript store: one JSON document per transcript (camelCase schema v1,
   tolerant decode for forward compatibility), atomic writes, sibling-WAV
   lifecycle, settings with safe defaults, and the edit rule that preserves

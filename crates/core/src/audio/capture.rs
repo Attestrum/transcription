@@ -38,9 +38,12 @@ pub struct InputDevice {
 
 /// One level-meter sample over the last window.
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct LevelUpdate {
     pub rms: f32,
     pub peak: f32,
+    /// Seconds of audio captured so far.
+    pub elapsed_secs: f64,
 }
 
 /// A finished (or interrupted) recording.
@@ -185,6 +188,7 @@ impl CaptureSink {
                 let update = LevelUpdate {
                     rms: (acc.sum_sq / acc.count as f64).sqrt() as f32,
                     peak: acc.peak,
+                    elapsed_secs: self.wav_written as f64 / TARGET_SAMPLE_RATE as f64,
                 };
                 *acc = LevelAccumulator::new();
                 (self.on_level)(update);

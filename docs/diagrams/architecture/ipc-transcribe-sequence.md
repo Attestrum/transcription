@@ -2,7 +2,7 @@
 title: "IPC contract — import-and-transcribe round trip"
 models: "src-tauri/src/lib.rs, src/lib/api"
 source_of_truth: diagram
-last_verified: b774630 2026-06-12
+last_verified: 767220d 2026-06-12
 diagram_type: sequenceDiagram
 ---
 
@@ -62,6 +62,11 @@ Command surface (full list): `list_models` / `download_model` /
 `player_seek` · `export_transcript` · `get_settings` / `set_settings` ·
 `product_info`.
 
-Event surface: `model:download:{progress,done,error}` ·
-`record:{level,elapsed}` · `transcribe:{segment,progress,done,error,cancelled}`
+Event surface: `model:download:{progress,done,error}` · `record:level`
+(carries `elapsedSecs`) · `transcribe:{segment,progress,done,error,cancelled}`
 · `playback:position`.
+
+Implementation status: everything above is implemented in
+`src-tauri/src/commands.rs` + `src/lib/api/` EXCEPT the `player_*` commands
+and `playback:position`, which land with the rodio playback work (M8). This
+file stays `source_of_truth: diagram` until then.
