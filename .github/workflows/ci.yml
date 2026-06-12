@@ -82,7 +82,9 @@ jobs:
           actual=$( (sha256sum "$f" 2>/dev/null || shasum -a 256 "$f") | awk '{print $1}' )
           [ "$actual" = "$TINY_SHA256" ] || { echo "checksum mismatch: $actual"; exit 1; }
       # The core crate is tauri-free by design — no frontendDist stub needed.
-      - run: cargo test -p attestrum-transcription-core --lib -- --ignored
+      # Scoped to engine:: — other ignored tests (live mic capture) need
+      # hardware the runners don't have.
+      - run: cargo test -p attestrum-transcription-core --lib engine:: -- --ignored
 
   build-smoke:
     name: build smoke (${{ matrix.os }})
