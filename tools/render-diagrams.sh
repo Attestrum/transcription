@@ -43,6 +43,14 @@ THEME="${ATTESTRUM_MMDC_THEME:-default}"
 BG="${ATTESTRUM_MMDC_BG:-white}"
 SCALE="${ATTESTRUM_MMDC_SCALE:-2}"
 
+# Optional puppeteer config (mmdc -p). CI needs {"args":["--no-sandbox"]}:
+# Ubuntu 24.04 runners restrict unprivileged user namespaces, which breaks
+# Chrome's sandbox under puppeteer.
+PUPPETEER_ARGS=()
+if [[ -n "${ATTESTRUM_MMDC_PUPPETEER_CONFIG:-}" ]]; then
+  PUPPETEER_ARGS=(-p "${ATTESTRUM_MMDC_PUPPETEER_CONFIG}")
+fi
+
 mkdir -p "${OUT_ROOT}"
 
 rendered=0
@@ -77,16 +85,20 @@ while IFS= read -r -d '' src; do
       out_png="${out_dir}/${base}-${i}.png"
     fi
 
+    mmdc_log="$(mktemp -t attestrum-mmdc-log-XXXXXX)"
     if "${MMDC[@]}" -i "${tmp_in}" -o "${out_png}" \
                     -e png -t "${THEME}" -b "${BG}" -s "${SCALE}" \
-                    >/dev/null 2>&1; then
+                    ${PUPPETEER_ARGS[@]+"${PUPPETEER_ARGS[@]}"} \
+                    >"${mmdc_log}" 2>&1; then
       rendered=$((rendered+1))
       printf "  ✓ %s\n" "${out_png#${REPO_ROOT}/}"
     else
       failed=$((failed+1))
       printf "  ✗ %s (mmdc failed on block %d of %s)\n" \
              "${out_png#${REPO_ROOT}/}" "${i}" "${rel}" >&2
+      sed 's/^/      mmdc: /' "${mmdc_log}" >&2
     fi
+    rm -f "${mmdc_log}"
     rm -f "${tmp_in}"
   done
 done < <(find "${SRC_ROOT}" -type f -name '*.md' -print0)

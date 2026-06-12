@@ -65,7 +65,9 @@ jobs:
           path: ~/.cache/puppeteer
           key: puppeteer-mermaid-cli-10.9.1
       - name: Mermaid parse (render every diagram)
-        run: bash tools/render-diagrams.sh
+        run: |
+          printf '{"args":["--no-sandbox"]}' > /tmp/puppeteer-ci.json
+          ATTESTRUM_MMDC_PUPPETEER_CONFIG=/tmp/puppeteer-ci.json bash tools/render-diagrams.sh
 
   engine-tests:
     name: engine tests, real model (${{ matrix.os }})
