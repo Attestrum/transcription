@@ -45,6 +45,44 @@ jobs:
       - run: npm run check
       - run: npm run build
 
+  engine-tests:
+    name: engine tests, real model (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      TINY_SHA256: be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.89.0
+      - uses: Swatinem/rust-cache@v2
+      - name: Cache whisper tiny model
+        id: model-cache
+        uses: actions/cache@v4
+        with:
+          path: crates/core/tests/models/ggml-tiny.bin
+          key: ggml-tiny-${{ env.TINY_SHA256 }}
+      - name: Download whisper tiny model
+        if: steps.model-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          mkdir -p crates/core/tests/models
+          curl -fsSL --retry 3 -o crates/core/tests/models/ggml-tiny.bin \
+            https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
+      # Verified even on cache hit — a corrupted cache entry must not reach the test.
+      - name: Verify model checksum
+        shell: bash
+        run: |
+          f=crates/core/tests/models/ggml-tiny.bin
+          actual=$( (sha256sum "$f" 2>/dev/null || shasum -a 256 "$f") | awk '{print $1}' )
+          [ "$actual" = "$TINY_SHA256" ] || { echo "checksum mismatch: $actual"; exit 1; }
+      # The core crate is tauri-free by design — no frontendDist stub needed.
+      - run: cargo test -p attestrum-transcription-core --lib -- --ignored
+
   build-smoke:
     name: build smoke (${{ matrix.os }})
     strategy:
