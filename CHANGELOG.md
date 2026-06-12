@@ -5,6 +5,12 @@ for the full record see the git log.
 
 ## [Unreleased]
 
+- Record + transcribe: ● REC opens record mode (live mirrored-bar waveform,
+  big timer) and stop flows straight into transcription with segments
+  typing in as whisper emits them; + IMPORT and window-wide drag-drop
+  transcribe media files. A missing model opens the download sheet —
+  terminal-style progress with live speed and an explicit SHA-256
+  VERIFIED ✓ before anything runs — then the job starts automatically.
 - Editor + playback: recordings play back through the Rust side (rodio over
   the archive WAV — never the webview's audio stack), with click-to-seek
   timestamps, a playing-segment highlight, a waveform-strip scrubber built

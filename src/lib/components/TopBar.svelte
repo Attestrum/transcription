@@ -38,11 +38,20 @@
 		<button
 			class="rec"
 			class:live={app.phase.kind === 'recording'}
+			disabled={app.phase.kind === 'transcribing'}
 			title={app.phase.kind === 'recording' ? 'Stop recording' : 'Record'}
+			onclick={() => app.toggleRecord()}
 		>
 			● REC
 		</button>
-		<button class="import" title="Import audio or video">+ IMPORT</button>
+		<button
+			class="import"
+			disabled={app.phase.kind !== 'idle'}
+			title="Import audio or video"
+			onclick={() => app.importFile()}
+		>
+			+ IMPORT
+		</button>
 	</div>
 </header>
 

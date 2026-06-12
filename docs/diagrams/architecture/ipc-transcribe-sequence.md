@@ -2,7 +2,7 @@
 title: "IPC contract — import-and-transcribe round trip"
 models: "src-tauri/src, src/lib/api"
 source_of_truth: code
-last_verified: 064036e 2026-06-12
+last_verified: a5ad884 2026-06-12
 diagram_type: sequenceDiagram
 ---
 

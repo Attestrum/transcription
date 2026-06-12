@@ -1,8 +1,8 @@
 ---
 title: "Attestrum Transcription — process and module overview"
 models: "crates/core, src-tauri/src, src/lib"
-source_of_truth: diagram
-last_verified: 064036e 2026-06-12
+source_of_truth: code
+last_verified: a5ad884 2026-06-12
 diagram_type: flowchart
 ---
 
@@ -68,9 +68,7 @@ Privacy invariant: the **only** network call in the entire app is the model
 download (cyan path above). Audio, transcripts, and metadata never leave the
 machine — `SECURITY.md` treats any violation as a security issue, not a bug.
 
-Implementation status: `crates/core` and the shell's command/event surface
-are fully implemented; transcription job queues live in the shell's
-`AppState` (`jobs` map + per-job threads), not in core `engine/`. The
-webview has the shell, library, editor, and player; the record/import
-surfaces (waveform, drop zone, model sheet) land in M9 — this file stays
-`source_of_truth: diagram` until they do.
+Every module above is implemented; this diagram is now a derived view of
+the code. Transcription job queues live in the shell's `AppState` (`jobs`
+map + per-job threads), not in core `engine/`. File pickers come from
+`tauri-plugin-dialog`; drag-drop uses the webview's built-in events.
