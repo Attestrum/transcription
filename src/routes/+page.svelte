@@ -1,75 +1,92 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api/core";
+	import { productInfo, type ProductInfo } from '$lib/api';
+	import { app } from '$lib/app-state.svelte';
+	import TopBar from '$lib/components/TopBar.svelte';
+	import LibraryPane from '$lib/components/LibraryPane.svelte';
+	import EditorPane from '$lib/components/EditorPane.svelte';
 
-  let info = $state<{ name: string; version: string } | null>(null);
+	let info = $state<ProductInfo | null>(null);
 
-  $effect(() => {
-    invoke<{ name: string; version: string }>("product_info").then((v) => {
-      info = v;
-    });
-  });
+	$effect(() => {
+		app.load();
+		productInfo()
+			.then((v) => (info = v))
+			.catch(() => {});
+	});
+
+	// The FX setting drives the scan-line overlay in tokens.css.
+	$effect(() => {
+		document.body.dataset.fx = app.fxEnabled ? 'on' : 'off';
+	});
 </script>
 
-<main class="boot">
-  <div class="wordmark">
-    <span class="brand">ATTESTRUM</span>
-    <span class="sep">▸</span>
-    <span class="product">TRANSCRIPTION</span>
-  </div>
-  <div class="status">
-    {#if info}
-      SHELL v{info.version} · ENGINE PENDING<span class="cursor">▮</span>
-    {:else}
-      BOOTING<span class="cursor">▮</span>
-    {/if}
-  </div>
-</main>
+<div class="shell">
+	<TopBar />
+	<div class="panes">
+		<LibraryPane />
+		<EditorPane />
+	</div>
+	<footer class="statusbar">
+		<button class="fx" onclick={() => app.toggleFx()} title="Toggle scan-lines and glow">
+			FX [{app.fxEnabled ? 'ON' : 'OFF'}]
+		</button>
+		{#if app.lastError}
+			<span class="error" role="alert">! {app.lastError.message}</span>
+		{/if}
+		<span class="version">{info ? `v${info.version}` : ''}</span>
+	</footer>
+</div>
 
 <style>
-  .boot {
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 18px;
-  }
+	.shell {
+		display: flex;
+		flex-direction: column;
+		height: 100vh;
+	}
 
-  .wordmark {
-    font-size: 22px;
-    letter-spacing: 0.32em;
-  }
+	.panes {
+		flex: 1;
+		display: flex;
+		min-height: 0;
+	}
 
-  .brand {
-    color: var(--cyan);
-    text-shadow: var(--glow-cyan);
-  }
+	.statusbar {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		height: 28px;
+		padding: 0 12px;
+		border-top: 1px solid var(--hairline);
+		background: var(--panel);
+		font-size: 10px;
+		letter-spacing: 0.16em;
+		color: var(--text-dim);
+	}
 
-  .sep {
-    color: var(--text-dim);
-    margin: 0 6px;
-  }
+	.fx {
+		padding: 0;
+		background: none;
+		border: none;
+		font-family: var(--mono);
+		font-size: 10px;
+		letter-spacing: 0.16em;
+		color: var(--text-dim);
+		cursor: pointer;
+		transition: color var(--t-fast) var(--ease);
+	}
 
-  .product {
-    color: var(--green);
-    text-shadow: var(--glow-green);
-  }
+	.fx:hover {
+		color: var(--cyan);
+	}
 
-  .status {
-    font-size: 12px;
-    letter-spacing: 0.22em;
-    color: var(--text-dim);
-  }
+	.error {
+		color: var(--red);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
 
-  .cursor {
-    color: var(--green);
-    margin-left: 6px;
-    animation: cursor-blink 1.2s step-end infinite;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .cursor {
-      animation: none;
-    }
-  }
+	.version {
+		margin-left: auto;
+	}
 </style>

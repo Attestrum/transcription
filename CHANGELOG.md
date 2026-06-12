@@ -5,6 +5,10 @@ for the full record see the git log.
 
 ## [Unreleased]
 
+- UI shell: top bar with the terminal status line (IDLE / REC / TRANSCRIBING
+  + blinking cursor), prompt-styled library pane with search and ASCII empty
+  states, editor pane with green clickable timestamps, status bar with the
+  FX toggle (scan-lines + glow; honors prefers-reduced-motion).
 - IPC layer: the full command surface (models, recording, transcription
   jobs with streaming segment/progress events, library CRUD, export,
   settings) plus a typed TypeScript client (`src/lib/api/`). Transcription
