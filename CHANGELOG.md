@@ -5,6 +5,11 @@ for the full record see the git log.
 
 ## [Unreleased]
 
+- Whisper engine: streaming segment callbacks, progress reporting, and
+  cooperative cancellation over whisper.cpp (Metal on macOS, CPU on Windows),
+  with real-model integration tests run in CI on both platforms.
+- macOS builds now require macOS 11+ (Apple Silicon baseline; whisper.cpp
+  uses `std::filesystem`, unavailable below 10.15).
 - Project scaffold: Tauri 2 + Svelte 5 workspace, `crates/core` engine split,
   Attestrum design tokens, dual Apache-2.0/MIT license.
 - CI: fmt/clippy/test gates, frontend check/build, macOS/Windows build smoke.
