@@ -14,3 +14,6 @@ vite.config.ts.timestamp-*
 
 # macOS
 .DS_Store
+
+# Derived diagram renders (local review only)
+/diagrams-png/
