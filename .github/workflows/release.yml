@@ -124,18 +124,21 @@ jobs:
           case "$GITHUB_REF_NAME" in
             *-rc*|*-alpha*|*-beta*|v0.0.*) prerelease_flag="--prerelease" ;;
           esac
+          cat > /tmp/release-notes.md <<'EOF'
+          Downloads for macOS (Apple Silicon) and Windows (x64).
+
+          Every binary is signed in this public CI run via Sigstore. Verify with stock cosign:
+
+          ```sh
+          cosign verify-blob \
+            --bundle <asset>.sigstore.json \
+            --certificate-identity-regexp '^https://github\.com/Attestrum/transcription/' \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            <asset>
+          ```
+          EOF
           gh release create "$GITHUB_REF_NAME" dist/* \
             --repo "$GITHUB_REPOSITORY" \
             --title "Attestrum Transcription $GITHUB_REF_NAME" \
             $prerelease_flag \
-            --notes "Downloads for macOS (Apple Silicon) and Windows (x64).
-
-Every binary is signed in this public CI run via Sigstore. Verify with stock cosign:
-
-\`\`\`sh
-cosign verify-blob \\
-  --bundle <asset>.sigstore.json \\
-  --certificate-identity-regexp '^https://github\\.com/Attestrum/transcription/' \\
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com \\
-  <asset>
-\`\`\`"
+            --notes-file /tmp/release-notes.md
