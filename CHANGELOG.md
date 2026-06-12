@@ -5,6 +5,10 @@ for the full record see the git log.
 
 ## [Unreleased]
 
+- CI: diagram gate — frontmatter completeness, `last_verified` validity and
+  freshness, code-diagram path references, drift (code named in a diagram's
+  `models:` changing without the diagram), and a Mermaid parse of every
+  diagram. Diagram-vs-code drift now fails the build.
 - UI shell: top bar with the terminal status line (IDLE / REC / TRANSCRIBING
   + blinking cursor), prompt-styled library pane with search and ASCII empty
   states, editor pane with green clickable timestamps, status bar with the

@@ -46,6 +46,27 @@ jobs:
       - run: npm run check
       - run: npm run build
 
+  diagrams:
+    name: diagrams (frontmatter, drift, mermaid parse)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The gate inspects history (last_verified SHAs, drift ranges).
+          fetch-depth: 0
+      - name: Diagram gate
+        run: bash tools/check-diagrams.sh --base '${{ github.event.before || github.event.pull_request.base.sha }}'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Cache mermaid-cli chromium
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/puppeteer
+          key: puppeteer-mermaid-cli-10.9.1
+      - name: Mermaid parse (render every diagram)
+        run: bash tools/render-diagrams.sh
+
   engine-tests:
     name: engine tests, real model (${{ matrix.os }})
     strategy:
