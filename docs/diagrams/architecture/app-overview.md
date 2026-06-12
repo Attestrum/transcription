@@ -1,8 +1,8 @@
 ---
 title: "Attestrum Transcription — process and module overview"
-models: "crates/core, src-tauri/src/lib.rs, src/lib"
+models: "crates/core, src-tauri/src, src/lib"
 source_of_truth: diagram
-last_verified: b774630 2026-06-12
+last_verified: 4afe42d 2026-06-12
 diagram_type: flowchart
 ---
 
@@ -36,7 +36,7 @@ flowchart TB
 
     subgraph core["crates/core — engine, no Tauri dep"]
         MODELS["models/<br/>catalog + downloader<br/>(resume, SHA-256, disk check)"]
-        ENGINE["engine/<br/>whisper-rs wrapper, job queue,<br/>abort via AtomicBool"]
+        ENGINE["engine/<br/>whisper-rs wrapper,<br/>abort via AtomicBool"]
         AUDIO["audio/<br/>cpal capture · symphonia decode ·<br/>rubato resample · hound WAV · rodio playback"]
         STORE["store/<br/>JSON transcript CRUD + settings"]
         EXPORT["export/<br/>TXT · SRT · VTT · JSON"]
@@ -67,3 +67,11 @@ flowchart TB
 Privacy invariant: the **only** network call in the entire app is the model
 download (cyan path above). Audio, transcripts, and metadata never leave the
 machine — `SECURITY.md` treats any violation as a security issue, not a bug.
+
+Implementation status: `crates/core` is fully implemented except rodio
+playback (M8); the shell's commands/state/events are implemented except
+`player_*`; transcription job queues live in the shell's `AppState`
+(`jobs` map + per-job threads), not in core `engine/`. The webview has the
+shell, library, and editor panes; record/import surfaces land in M8–M9.
+This file stays `source_of_truth: diagram` until the record/import and
+playback nodes exist in code.
