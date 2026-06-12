@@ -1,0 +1,24 @@
+[package]
+name = "attestrum-transcription"
+description = "Private, on-device speech-to-text for macOS and Windows"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[lib]
+# The `_lib` suffix is necessary so the lib name doesn't conflict with the
+# bin name on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "attestrum_transcription_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+attestrum-transcription-core = { path = "../crates/core" }
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde.workspace = true
+serde_json.workspace = true
