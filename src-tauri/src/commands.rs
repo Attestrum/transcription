@@ -222,6 +222,21 @@ pub fn stop_recording(state: State<'_, AppState>) -> CmdResult<RecordingInfo> {
     Ok(info)
 }
 
+/// Stop (if live) and throw away the pending recording — the record
+/// sheet's Cancel. Removes the temp WAV.
+#[tauri::command]
+pub fn discard_recording(state: State<'_, AppState>) -> CmdResult<()> {
+    if let Some(session) = state.recording.lock().unwrap().take() {
+        let result = session.stop()?;
+        std::fs::remove_file(&result.wav_path).ok();
+        return Ok(());
+    }
+    if let Some(rec) = state.last_recording.lock().unwrap().take() {
+        std::fs::remove_file(&rec.wav_path).ok();
+    }
+    Ok(())
+}
+
 // ------------------------------------------------------------- transcribe
 
 #[derive(Deserialize)]

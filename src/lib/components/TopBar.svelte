@@ -1,173 +1,89 @@
 <script lang="ts">
 	import { app } from '../app-state.svelte';
-
-	function statusText(): string {
-		const p = app.phase;
-		switch (p.kind) {
-			case 'idle':
-				return 'IDLE';
-			case 'recording':
-				return `REC ${hms(p.elapsedSecs)}`;
-			case 'transcribing':
-				return `TRANSCRIBING ${p.pct}% · ${p.modelId}${p.phase === 'decode' ? ' · decoding' : ''}`;
-		}
-	}
-
-	function hms(secs: number): string {
-		const t = Math.floor(secs);
-		const h = Math.floor(t / 3600);
-		const m = Math.floor((t % 3600) / 60);
-		const s = t % 60;
-		const pad = (n: number) => String(n).padStart(2, '0');
-		return `${pad(h)}:${pad(m)}:${pad(s)}`;
-	}
 </script>
 
-<header class="topbar">
-	<div class="wordmark">
-		<span class="brand">ATTESTRUM</span>
-		<span class="sep">▸</span>
-		<span class="product">TRANSCRIPTION</span>
-	</div>
-
-	<div class="status" class:recording={app.phase.kind === 'recording'}>
-		{statusText()}<span class="cursor">▮</span>
-	</div>
-
+<!-- The main pane's title row: app title left, mic + settings right
+     (toolbar .primaryAction in the original). Doubles as window drag area. -->
+<header class="titlebar" data-tauri-drag-region>
+	<h1 data-tauri-drag-region>Attestrum Transcription</h1>
 	<div class="actions">
 		<button
-			class="rec"
-			class:live={app.phase.kind === 'recording'}
+			class="icon-btn"
+			class:recording={app.phase.kind === 'recording'}
 			disabled={app.phase.kind === 'transcribing'}
-			title={app.phase.kind === 'recording' ? 'Stop recording' : 'Record'}
+			title="Record"
+			aria-label="Record"
 			onclick={() => app.toggleRecord()}
 		>
-			● REC
+			<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+				stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<rect x="9" y="3" width="6" height="11" rx="3" />
+				<path d="M5 11a7 7 0 0 0 14 0" />
+				<line x1="12" y1="18" x2="12" y2="21" />
+			</svg>
 		</button>
-		<button
-			class="import"
-			disabled={app.phase.kind !== 'idle'}
-			title="Import audio or video"
-			onclick={() => app.importFile()}
-		>
-			+ IMPORT
+		<button class="icon-btn" disabled title="Settings (coming soon)" aria-label="Settings">
+			<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+				stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<circle cx="12" cy="12" r="3" />
+				<path
+					d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+			</svg>
 		</button>
 	</div>
 </header>
 
 <style>
-	.topbar {
-		display: grid;
-		grid-template-columns: 1fr auto 1fr;
+	.titlebar {
+		display: flex;
 		align-items: center;
-		height: 48px;
-		padding: 0 16px;
-		border-bottom: 1px solid var(--hairline);
-		background: var(--panel);
+		justify-content: space-between;
+		height: 52px;
+		padding: 0 16px 0 20px;
+		flex: none;
 	}
 
-	.wordmark {
-		font-size: 13px;
-		letter-spacing: 0.28em;
-		white-space: nowrap;
-	}
-
-	.brand {
-		color: var(--cyan);
-		text-shadow: var(--glow-cyan);
-	}
-
-	.sep {
-		color: var(--text-dim);
-		margin: 0 5px;
-	}
-
-	.product {
-		color: var(--green);
-		text-shadow: var(--glow-green);
-	}
-
-	.status {
-		justify-self: center;
-		font-size: 12px;
-		letter-spacing: 0.2em;
-		color: var(--text-dim);
-		white-space: nowrap;
-	}
-
-	.status.recording {
-		color: var(--green);
-		text-shadow: var(--glow-green);
-	}
-
-	.cursor {
-		color: var(--green);
-		margin-left: 6px;
-		animation: cursor-blink 1.2s step-end infinite;
+	h1 {
+		margin: 0;
+		font-size: 16px;
+		font-weight: 600;
+		letter-spacing: 0;
+		pointer-events: none;
 	}
 
 	.actions {
-		justify-self: end;
 		display: flex;
-		gap: 10px;
+		gap: 4px;
+		background: var(--surface-elevated);
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		padding: 2px;
 	}
 
-	button {
-		font-family: var(--mono);
-		font-size: 11px;
-		letter-spacing: 0.18em;
-		padding: 6px 12px;
+	.icon-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 30px;
+		height: 30px;
+		border: none;
+		border-radius: 999px;
 		background: transparent;
-		border: 1px solid var(--hairline);
-		color: var(--text);
+		color: var(--label-primary);
 		cursor: pointer;
-		transition:
-			border-color var(--t-fast) var(--ease),
-			color var(--t-fast) var(--ease),
-			box-shadow var(--t-fast) var(--ease),
-			transform var(--t-fast) var(--ease);
+		transition: background var(--t-hover);
 	}
 
-	button:hover {
-		border-color: var(--cyan-dim);
-		color: var(--cyan);
-		box-shadow: var(--glow-cyan);
+	.icon-btn:hover:not(:disabled) {
+		background: var(--surface-highlight);
 	}
 
-	button:active {
-		transform: translateY(1px);
+	.icon-btn:disabled {
+		color: var(--label-quaternary);
+		cursor: default;
 	}
 
-	.rec {
-		color: var(--green);
-	}
-
-	.rec:hover {
-		border-color: var(--green-dim);
-		color: var(--green);
-		box-shadow: var(--glow-green);
-	}
-
-	.rec.live {
-		border-color: var(--green-dim);
-		box-shadow: var(--glow-green);
-		animation: rec-pulse 1.6s var(--ease) infinite;
-	}
-
-	@keyframes rec-pulse {
-		0%,
-		100% {
-			box-shadow: var(--glow-green);
-		}
-		50% {
-			box-shadow: 0 0 12px rgba(127, 255, 176, 0.55);
-		}
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.cursor,
-		.rec.live {
-			animation: none;
-		}
+	.icon-btn.recording {
+		color: var(--red);
 	}
 </style>

@@ -6,7 +6,7 @@
  * rejects — load() degrades to empty data so the shell stays inspectable.
  */
 
-import { open as openFileDialog } from '@tauri-apps/plugin-dialog';
+import { ask, open as openFileDialog } from '@tauri-apps/plugin-dialog';
 import * as api from './api';
 import type {
 	AppError,
@@ -50,10 +50,7 @@ class AppState {
 	playerLoaded = $state(false);
 	position = $state(0);
 	playing = $state(false);
-	peaks = $state<number[]>([]);
 
-	/** Live recording: recent RMS levels for the waveform (newest last). */
-	levelHistory = $state<number[]>([]);
 	/** Segments streamed by the in-flight transcription job. */
 	liveSegments = $state<EngineSegment[]>([]);
 	/** The model download sheet, when open. */
@@ -63,10 +60,6 @@ class AppState {
 		const q = this.search.trim().toLowerCase();
 		if (!q) return this.transcripts;
 		return this.transcripts.filter((t) => t.title.toLowerCase().includes(q));
-	}
-
-	get fxEnabled(): boolean {
-		return this.settings?.fxEnabled ?? true;
 	}
 
 	async load(): Promise<void> {
@@ -102,12 +95,10 @@ class AppState {
 		this.playerLoaded = false;
 		this.position = 0;
 		this.playing = false;
-		this.peaks = [];
 		if (this.selected?.audioRelativePath) {
 			try {
 				await api.playerLoad(id);
 				this.playerLoaded = true;
-				this.peaks = await api.playerPeaks(id);
 			} catch (e) {
 				this.fail(e);
 			}
@@ -154,11 +145,19 @@ class AppState {
 		}
 	}
 
-	async toggleFx(): Promise<void> {
-		if (!this.settings) return;
-		this.settings.fxEnabled = !this.settings.fxEnabled;
+	/** Sidebar trash icon — native confirm, then delete. */
+	async deleteWithConfirm(id: string, title: string): Promise<void> {
+		const yes = await ask(`Delete "${title}"? This also removes its recording.`, {
+			title: 'Delete transcript',
+			kind: 'warning',
+			okLabel: 'Delete',
+			cancelLabel: 'Cancel'
+		}).catch(() => false);
+		if (!yes) return;
 		try {
-			await api.setSettings($state.snapshot(this.settings) as Settings);
+			await api.deleteTranscript(id);
+			if (this.selected?.id === id) this.selected = null;
+			await this.refreshTranscripts();
 		} catch (e) {
 			this.fail(e);
 		}
@@ -179,7 +178,6 @@ class AppState {
 		this.lastError = null;
 		try {
 			await api.startRecording(this.settings?.inputDeviceId ?? undefined);
-			this.levelHistory = [];
 			this.phase = { kind: 'recording', elapsedSecs: 0 };
 		} catch (e) {
 			this.fail(e);
@@ -195,6 +193,16 @@ class AppState {
 			return;
 		}
 		await this.transcribeSource({ type: 'recording' });
+	}
+
+	/** The record sheet's Cancel: stop and throw the audio away. */
+	async cancelRecording(): Promise<void> {
+		try {
+			await api.discardRecording();
+		} catch (e) {
+			this.fail(e);
+		}
+		this.phase = { kind: 'idle' };
 	}
 
 	/** The + IMPORT button: pick a media file and transcribe it. */
@@ -289,7 +297,6 @@ class AppState {
 			api.onRecordLevel((l) => {
 				if (this.phase.kind !== 'recording') return;
 				this.phase = { kind: 'recording', elapsedSecs: l.elapsedSecs };
-				this.levelHistory = [...this.levelHistory.slice(-239), l.rms];
 			}),
 			api.onTranscribeSegment((e) => {
 				if (this.phase.kind === 'transcribing' && e.jobId === this.phase.jobId) {

@@ -37,6 +37,7 @@ pub fn run() {
             commands::list_input_devices,
             commands::start_recording,
             commands::stop_recording,
+            commands::discard_recording,
             commands::transcribe,
             commands::cancel_job,
             commands::list_transcripts,

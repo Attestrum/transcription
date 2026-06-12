@@ -2,7 +2,7 @@
 title: "Attestrum Transcription — process and module overview"
 models: "crates/core, src-tauri/src, src/lib"
 source_of_truth: code
-last_verified: a5ad884 2026-06-12
+last_verified: f0b9925 2026-06-12
 diagram_type: flowchart
 ---
 

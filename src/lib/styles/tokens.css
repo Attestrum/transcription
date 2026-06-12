@@ -1,39 +1,46 @@
 /*
- * Attestrum Transcription design tokens.
- * Extends the Attestrum brand language: cyan/green on near-black,
- * monospace everywhere, glow used with restraint (blur <= 12px).
+ * Attestrum Transcription design tokens — a faithful port of the original
+ * app's native-macOS dark theme (Theme.swift). Dark only; system fonts;
+ * flat surfaces with hairline borders; system-blue accent.
  */
 :root {
   /* Surfaces */
-  --bg: #0a0e14;
-  --panel: #0d1219;
-  --hairline: #1a2230;
+  --surface-base: #1d1d1d;
+  --surface-sidebar: #232323;
+  --surface-elevated: rgba(255, 255, 255, 0.05);
+  --surface-highlight: rgba(255, 255, 255, 0.1);
 
-  /* Text */
-  --text: #c8d4e0;
-  --text-dim: #6b7a8c;
+  /* Borders */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.18);
 
-  /* Accents — cyan = interactive/system, green = timestamps/success/recording */
-  --cyan: #7fe0ff;
-  --cyan-bright: #9ff0ff;
-  --cyan-dim: rgba(127, 224, 255, 0.4);
-  --cyan-wash: rgba(127, 224, 255, 0.06);
-  --green: #7fffb0;
-  --green-dim: rgba(127, 255, 176, 0.4);
-  --red: #ff7f8a;
+  /* Labels */
+  --label-primary: #ffffff;
+  --label-secondary: #ababab;
+  --label-tertiary: rgba(255, 255, 255, 0.45);
+  --label-quaternary: rgba(255, 255, 255, 0.25);
 
-  /* Glow — low alpha, never blur > 12px */
-  --glow-cyan: 0 0 6px rgba(127, 224, 255, 0.45);
-  --glow-cyan-strong: 0 0 12px rgba(127, 224, 255, 0.35);
-  --glow-green: 0 0 6px rgba(127, 255, 176, 0.45);
+  /* Accent — macOS dark system blue + the opacity ramp Theme.swift uses */
+  --accent: #0a84ff;
+  --accent-card: rgba(10, 132, 255, 0.08);
+  --accent-pill: rgba(10, 132, 255, 0.18);
+  --accent-selection: rgba(10, 132, 255, 0.22);
+  --accent-stroke: rgba(10, 132, 255, 0.25);
+  --accent-focus: rgba(10, 132, 255, 0.5);
 
-  /* Type */
-  --mono: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+  /* Status */
+  --red: #ff453a;
+  --green: #32d74b;
+  --active-segment: rgba(255, 255, 0, 0.18);
+  --find-match: rgba(255, 255, 0, 0.5);
 
-  /* Motion — everything <= 200ms */
-  --ease: cubic-bezier(0.2, 0, 0, 1);
-  --t-fast: 120ms;
-  --t-med: 180ms;
+  /* Type — system stack; monospace only for timestamps/counters */
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+  --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
+
+  /* Motion (from Theme.swift's animation constants) */
+  --t-hover: 120ms ease-out;
+  --t-pulse: 220ms ease-out;
 }
 
 html,
@@ -41,47 +48,21 @@ body {
   margin: 0;
   padding: 0;
   height: 100%;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--mono);
+  background: var(--surface-base);
+  color: var(--label-primary);
+  font-family: var(--font);
+  font-size: 14px;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   user-select: none;
 }
 
-/* Scan-line texture: 2% opacity, disabled when FX is off or motion is reduced */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 9999;
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent 0,
-    transparent 2px,
-    rgba(127, 224, 255, 0.02) 2px,
-    rgba(127, 224, 255, 0.02) 3px
-  );
+button {
+  font-family: var(--font);
 }
 
-body[data-fx='off']::after {
-  display: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  body::after {
-    display: none;
-  }
-}
-
-@keyframes cursor-blink {
-  0%,
-  49% {
-    opacity: 1;
-  }
-  50%,
-  100% {
-    opacity: 0;
-  }
+/* macOS-style focus: a subtle accent border, no thick outline rings. */
+:focus-visible {
+  outline: 2px solid var(--accent-focus);
+  outline-offset: -1px;
 }

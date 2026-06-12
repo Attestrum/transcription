@@ -1,135 +1,142 @@
 <script lang="ts">
 	import { app } from '../app-state.svelte';
 
-	let canvas = $state<HTMLCanvasElement | null>(null);
-
 	const elapsed = $derived(app.phase.kind === 'recording' ? app.phase.elapsedSecs : 0);
 
+	/** "MM:SS" under an hour, "H:MM:SS" after — the original's timer. */
 	function timer(secs: number): string {
 		const t = Math.floor(secs);
 		const h = Math.floor(t / 3600);
 		const m = Math.floor((t % 3600) / 60);
 		const s = t % 60;
 		const pad = (n: number) => String(n).padStart(2, '0');
-		return `${pad(h)}:${pad(m)}:${pad(s)}`;
+		return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
 	}
-
-	// Mirrored-bar waveform: newest level on the right, additive glow,
-	// decaying peak caps.
-	let caps: number[] = [];
-	$effect(() => {
-		const el = canvas;
-		if (!el) return;
-		const levels = app.levelHistory;
-		const dpr = window.devicePixelRatio || 1;
-		const w = el.clientWidth;
-		const h = el.clientHeight;
-		el.width = w * dpr;
-		el.height = h * dpr;
-		const ctx = el.getContext('2d');
-		if (!ctx) return;
-		ctx.scale(dpr, dpr);
-		ctx.clearRect(0, 0, w, h);
-
-		const n = 120;
-		const recent = levels.slice(-n);
-		const barW = w / n;
-		const mid = h / 2;
-		if (caps.length !== n) caps = new Array(n).fill(0);
-
-		ctx.globalCompositeOperation = 'lighter';
-		for (let i = 0; i < recent.length; i++) {
-			// Map RMS (speech peaks ~0.3) onto the bar height with headroom.
-			const amp = Math.min(recent[i] * 3.2, 1) * (mid - 6) + 2;
-			const x = w - (recent.length - i) * barW;
-			ctx.fillStyle = 'rgba(127, 255, 176, 0.55)';
-			ctx.fillRect(x, mid - amp, Math.max(barW - 1.5, 1), amp * 2);
-
-			// Decaying peak caps.
-			const slot = n - (recent.length - i);
-			caps[slot] = Math.max(caps[slot] * 0.96, amp);
-			ctx.fillStyle = 'rgba(127, 255, 176, 0.9)';
-			ctx.fillRect(x, mid - caps[slot] - 2, Math.max(barW - 1.5, 1), 1.5);
-			ctx.fillRect(x, mid + caps[slot] + 0.5, Math.max(barW - 1.5, 1), 1.5);
-		}
-		ctx.globalCompositeOperation = 'source-over';
-	});
 </script>
 
-<section class="record">
-	<div class="live">● RECORDING</div>
-	<canvas bind:this={canvas} class="wave" aria-hidden="true"></canvas>
-	<div class="timer">{timer(elapsed)}</div>
-	<button class="stop" onclick={() => app.toggleRecord()}>[ ■ STOP &amp; TRANSCRIBE ]</button>
-</section>
+<!-- The recording sheet (RecordSourceSheet's recording screen, mic source). -->
+<div class="scrim" role="dialog" aria-modal="true" aria-label="Recording">
+	<div class="sheet">
+		<svg class="mic" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+			stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+			<circle cx="12" cy="12" r="11" />
+			<rect x="10" y="5.5" width="4" height="7.5" rx="2" fill="currentColor" stroke="none" />
+			<path d="M7.5 11a4.5 4.5 0 0 0 9 0" />
+			<line x1="12" y1="15.5" x2="12" y2="18" />
+		</svg>
+		<h2>Record from microphone</h2>
+		<p class="desc">Captures your selected input device. Recording stays on this Mac.</p>
+		<div class="timer">{timer(elapsed)}</div>
+		<div class="buttons">
+			<button class="stop" onclick={() => app.toggleRecord()}>
+				<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+					<rect x="5" y="5" width="14" height="14" rx="2" />
+				</svg>
+				Stop &amp; Transcribe
+			</button>
+			<button class="cancel" onclick={() => app.cancelRecording()}>Cancel</button>
+		</div>
+	</div>
+</div>
 
 <style>
-	.record {
-		flex: 1;
+	.scrim {
+		position: fixed;
+		inset: 0;
+		z-index: 100;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(0, 0, 0, 0.45);
+	}
+
+	.sheet {
+		width: 440px;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		justify-content: center;
-		gap: 28px;
-		background: var(--bg);
+		gap: 16px;
+		padding: 28px;
+		background: var(--surface-base);
+		border: 1px solid var(--border-strong);
+		border-radius: 12px;
+		box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
 	}
 
-	.live {
-		font-size: 12px;
-		letter-spacing: 0.32em;
-		color: var(--green);
-		text-shadow: var(--glow-green);
-		animation: rec-blink 1.6s step-end infinite;
+	.mic {
+		color: var(--red);
+		animation: pulse 1.6s ease-in-out infinite;
 	}
 
-	@keyframes rec-blink {
+	@keyframes pulse {
 		0%,
-		74% {
+		100% {
 			opacity: 1;
 		}
-		75%,
-		100% {
-			opacity: 0.35;
+		50% {
+			opacity: 0.55;
 		}
 	}
 
-	.wave {
-		width: min(86%, 900px);
-		height: 160px;
+	h2 {
+		margin: 0;
+		font-size: 16px;
+		font-weight: 600;
+	}
+
+	.desc {
+		margin: 0;
+		font-size: 12px;
+		color: var(--label-secondary);
+		text-align: center;
 	}
 
 	.timer {
-		font-size: 56px;
-		font-weight: 600;
-		letter-spacing: 0.12em;
-		color: var(--text);
+		font-family: var(--mono);
+		font-size: 32px;
+		color: var(--red);
 		font-variant-numeric: tabular-nums;
 	}
 
+	.buttons {
+		display: flex;
+		gap: 10px;
+	}
+
 	.stop {
-		padding: 10px 18px;
-		background: transparent;
-		border: 1px solid var(--green-dim);
-		font-family: var(--mono);
-		font-size: 12px;
-		letter-spacing: 0.18em;
-		color: var(--green);
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		padding: 8px 16px;
+		background: var(--accent);
+		border: none;
+		border-radius: 7px;
+		font-size: 13px;
+		font-weight: 500;
+		color: #fff;
 		cursor: pointer;
-		transition:
-			box-shadow var(--t-fast) var(--ease),
-			transform var(--t-fast) var(--ease);
 	}
 
 	.stop:hover {
-		box-shadow: var(--glow-green);
+		filter: brightness(1.1);
 	}
 
-	.stop:active {
-		transform: translateY(1px);
+	.cancel {
+		padding: 8px 16px;
+		background: var(--surface-elevated);
+		border: 1px solid var(--border-strong);
+		border-radius: 7px;
+		font-size: 13px;
+		color: var(--label-primary);
+		cursor: pointer;
+	}
+
+	.cancel:hover {
+		background: var(--surface-highlight);
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.live {
+		.mic {
 			animation: none;
 		}
 	}

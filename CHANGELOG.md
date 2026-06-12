@@ -5,6 +5,13 @@ for the full record see the git log.
 
 ## [Unreleased]
 
+- Design: replaced the terminal/CRT aesthetic with a faithful port of the
+  original Austin's Transcriptor native-macOS design — system fonts, flat
+  dark surfaces with hairline borders, system-blue accent, overlay traffic
+  lights, sidebar with Today/Yesterday/Earlier groups and inline delete,
+  dashed drop-zone home, capsule metadata chips, slider player bar, and
+  modal record/download sheets. Recording can now be cancelled (audio
+  discarded) as well as stopped-and-transcribed.
 - Record + transcribe: ● REC opens record mode (live mirrored-bar waveform,
   big timer) and stop flows straight into transcription with segments
   typing in as whisper emits them; + IMPORT and window-wide drag-drop

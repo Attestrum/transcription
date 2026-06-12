@@ -3,81 +3,51 @@
 
 	const phase = $derived(app.phase.kind === 'transcribing' ? app.phase : null);
 
-	let revealed = $state(0); // segments fully typed in
-	let typing = $state(''); // visible prefix of the segment being typed
 	let scroller = $state<HTMLDivElement | null>(null);
 
-	// Typewriter: each freshly streamed segment types in over ~120 ms.
-	// With FX off (or reduced motion) everything shows instantly.
 	$effect(() => {
-		const total = app.liveSegments.length;
-		if (!app.fxEnabled || matchMedia('(prefers-reduced-motion: reduce)').matches) {
-			revealed = total;
-			typing = '';
-			return;
-		}
-		if (revealed >= total || typing !== '') return;
-		const text = app.liveSegments[revealed].text;
-		const started = performance.now();
-		let raf = 0;
-		const step = (now: number) => {
-			const frac = Math.min((now - started) / 120, 1);
-			typing = text.slice(0, Math.ceil(text.length * frac));
-			if (frac < 1) {
-				raf = requestAnimationFrame(step);
-			} else {
-				revealed += 1;
-				typing = '';
-			}
-		};
-		raf = requestAnimationFrame(step);
-		return () => cancelAnimationFrame(raf);
-	});
-
-	// Keep the newest line in view as segments stream.
-	$effect(() => {
-		void revealed;
-		void typing;
+		void app.liveSegments.length;
 		scroller?.scrollTo({ top: scroller.scrollHeight });
 	});
 
 	function ts(secs: number): string {
-		const t = Math.floor(secs * 1000);
-		const h = Math.floor(t / 3_600_000);
-		const m = Math.floor(t / 60_000) % 60;
-		const s = Math.floor(t / 1000) % 60;
+		const t = Math.floor(secs);
+		const h = Math.floor(t / 3600);
+		const m = Math.floor((t % 3600) / 60);
+		const s = t % 60;
 		const pad = (n: number) => String(n).padStart(2, '0');
-		return `${pad(h)}:${pad(m)}:${pad(s)}`;
+		return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
 	}
 </script>
 
-<section class="transcribing">
+<div class="transcribing">
 	<header class="head">
-		<span class="state">
-			{phase?.phase === 'decode' ? 'DECODING' : 'TRANSCRIBING'}
-			{phase ? `${phase.pct}%` : ''} · {phase?.modelId}
-		</span>
-		<button class="cancel" onclick={() => app.cancelTranscribe()}>[ ✕ CANCEL ]</button>
+		<div class="status">
+			<svg class="wave" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+				stroke-width="2" stroke-linecap="round" aria-hidden="true">
+				<line x1="4" y1="10" x2="4" y2="14" /><line x1="9" y1="6" x2="9" y2="18" />
+				<line x1="14" y1="3" x2="14" y2="21" /><line x1="19" y1="8" x2="19" y2="16" />
+			</svg>
+			<span>
+				{phase?.phase === 'decode' ? 'Decoding' : 'Transcribing'}…
+				{phase && phase.pct > 0 ? `${phase.pct}%` : ''}
+			</span>
+		</div>
+		<button class="cancel" onclick={() => app.cancelTranscribe()}>Cancel</button>
 	</header>
+	<div class="bar">
+		<div class="fill" style:width="{phase?.pct ?? 0}%"></div>
+	</div>
 
 	<div class="stream" bind:this={scroller}>
-		{#each app.liveSegments.slice(0, revealed) as seg, i (i)}
+		{#each app.liveSegments as seg, i (i)}
 			<div class="row">
-				<span class="stamp">[{ts(seg.start)}]</span>
+				<span class="stamp">{ts(seg.start)}</span>
 				<span class="text">{seg.text}</span>
 			</div>
 		{/each}
-		{#if typing}
-			<div class="row">
-				<span class="stamp">[{ts(app.liveSegments[revealed].start)}]</span>
-				<span class="text">{typing}<span class="cursor">▮</span></span>
-			</div>
-		{/if}
-		<div class="row ghost">
-			<span class="text">▮ decoding…</span>
-		</div>
 	</div>
-</section>
+</div>
 
 <style>
 	.transcribing {
@@ -85,72 +55,102 @@
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
-		background: var(--bg);
+		min-height: 0;
 	}
 
 	.head {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 14px 24px;
-		border-bottom: 1px solid var(--hairline);
+		padding: 4px 20px 10px;
 	}
 
-	.state {
-		font-size: 12px;
-		letter-spacing: 0.22em;
-		color: var(--cyan);
-		text-shadow: var(--glow-cyan);
+	.status {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 13px;
+		font-weight: 500;
+		color: var(--label-primary);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.wave {
+		color: var(--accent);
+		animation: pulse 1.4s ease-in-out infinite;
+	}
+
+	@keyframes pulse {
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.45;
+		}
 	}
 
 	.cancel {
-		padding: 4px 10px;
-		background: transparent;
-		border: 1px solid var(--hairline);
-		font-family: var(--mono);
-		font-size: 11px;
-		letter-spacing: 0.14em;
-		color: var(--text-dim);
+		padding: 5px 12px;
+		background: var(--surface-elevated);
+		border: 1px solid var(--border-strong);
+		border-radius: 6px;
+		font-size: 12px;
+		color: var(--label-primary);
 		cursor: pointer;
-		transition: color var(--t-fast) var(--ease);
 	}
 
 	.cancel:hover {
-		color: var(--red);
-		border-color: var(--red);
+		background: var(--surface-highlight);
+	}
+
+	.bar {
+		height: 6px;
+		margin: 0 20px 8px;
+		border-radius: 3px;
+		background: var(--surface-highlight);
+		overflow: hidden;
+		flex: none;
+	}
+
+	.fill {
+		height: 100%;
+		border-radius: 3px;
+		background: var(--accent);
+		transition: width 0.25s linear;
 	}
 
 	.stream {
 		flex: 1;
 		overflow-y: auto;
-		padding: 16px 24px;
+		padding: 12px 16px;
 	}
 
 	.row {
 		display: flex;
-		gap: 12px;
-		padding: 5px 0;
-		line-height: 1.55;
-		font-size: 13px;
+		gap: 10px;
+		padding: 4px 6px;
+		line-height: 1.5;
 	}
 
 	.stamp {
 		flex: none;
-		color: var(--green);
-		font-size: 12px;
+		width: 64px;
+		font-family: var(--mono);
+		font-size: 11px;
+		text-align: right;
+		color: var(--label-tertiary);
+		line-height: inherit;
 	}
 
 	.text {
-		color: var(--text);
+		font-size: 14px;
+		color: var(--label-primary);
 	}
 
-	.cursor {
-		color: var(--green);
-		margin-left: 2px;
-	}
-
-	.ghost .text {
-		color: var(--text-dim);
-		opacity: 0.6;
+	@media (prefers-reduced-motion: reduce) {
+		.wave {
+			animation: none;
+		}
 	}
 </style>

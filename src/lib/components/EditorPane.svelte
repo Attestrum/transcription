@@ -26,14 +26,14 @@
 		return q.length > 0 && text.toLowerCase().includes(q);
 	}
 
+	/** "M:SS" / "H:MM:SS" — the original's timestamp format. */
 	function ts(secs: number): string {
-		const t = Math.floor(secs * 1000);
-		const h = Math.floor(t / 3_600_000);
-		const m = Math.floor(t / 60_000) % 60;
-		const s = Math.floor(t / 1000) % 60;
-		const ms = t % 1000;
-		const pad = (n: number, w = 2) => String(n).padStart(w, '0');
-		return `${pad(h)}:${pad(m)}:${pad(s)}.${pad(ms, 3)}`;
+		const t = Math.floor(secs);
+		const h = Math.floor(t / 3600);
+		const m = Math.floor((t % 3600) / 60);
+		const s = t % 60;
+		const pad = (n: number) => String(n).padStart(2, '0');
+		return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
 	}
 
 	function beginEdit(id: number, text: string) {
@@ -57,72 +57,72 @@
 		}
 	}
 
-	function commitTitle(e: Event) {
-		app.rename((e.target as HTMLInputElement).value);
-	}
-
-	// Focus the segment textarea as soon as it renders.
 	function autofocus(el: HTMLTextAreaElement) {
 		el.focus();
 		el.setSelectionRange(el.value.length, el.value.length);
 	}
 </script>
 
-<section class="editor">
-	{#if app.selected}
-		{@const t = app.selected}
-		<header class="doc-head">
+{#if app.selected}
+	{@const t = app.selected}
+	<div class="editor">
+		<header class="head">
 			<input
 				class="title"
 				value={t.title}
-				onchange={commitTitle}
+				onchange={(e) => app.rename((e.target as HTMLInputElement).value)}
 				onkeydown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
 				spellcheck="false"
+				title="Click to rename — used as the default filename when exporting"
 				aria-label="Transcript title"
 			/>
-			<div class="meta-row">
-				<div class="chips">
-					<span class="chip">{t.modelId}</span>
-					<span class="chip">{t.language.toUpperCase()}</span>
-					<span class="chip"
-						>{Math.floor(t.duration / 60)}:{String(Math.floor(t.duration % 60)).padStart(
-							2,
-							'0'
-						)}</span
-					>
-					{#if t.audioRelativePath}<span class="chip green">WAV</span>{/if}
-				</div>
-				<div class="find">
-					<span class="prompt">/</span>
-					<input
-						type="text"
-						bind:value={find}
-						placeholder="find"
-						spellcheck="false"
-						aria-label="Find in transcript"
-					/>
+			<div class="chips">
+				<span class="chip" title="Duration">
+					<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+						<circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" stroke-linecap="round" />
+					</svg>
+					{ts(t.duration)}
+				</span>
+				<span class="chip" title="Model">
+					<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+						<line x1="4" y1="10" x2="4" y2="14" /><line x1="9" y1="6" x2="9" y2="18" />
+						<line x1="14" y1="3" x2="14" y2="21" /><line x1="19" y1="8" x2="19" y2="16" />
+					</svg>
+					{t.modelId}
+				</span>
+				<span class="chip" title="Language">{t.language.toUpperCase()}</span>
+				<span class="chip" title="Created">
+					<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+						<rect x="3" y="5" width="18" height="16" rx="2" /><line x1="3" y1="10" x2="21" y2="10" />
+						<line x1="8" y1="3" x2="8" y2="7" stroke-linecap="round" /><line x1="16" y1="3" x2="16" y2="7" stroke-linecap="round" />
+					</svg>
+					{new Date(t.createdAt).getMonth() + 1}/{new Date(t.createdAt).getDate()}/{String(
+						new Date(t.createdAt).getFullYear()
+					).slice(2)}
+				</span>
+				<span class="chip find" class:focused={find.length > 0}>
+					<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+						<circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.5" y2="16.5" />
+					</svg>
+					<input bind:value={find} placeholder="Find" spellcheck="false" aria-label="Find in transcript" />
 					{#if find.trim()}
-						<span class="count" class:none={matchCount === 0}>{matchCount}</span>
+						<span class="counter" class:none={matchCount === 0}>{matchCount}</span>
 					{/if}
-				</div>
+				</span>
 			</div>
 		</header>
 
 		<div class="segments">
 			{#each t.segments as seg (seg.id)}
-				<div
-					class="segment"
-					class:playing={playingSegmentId === seg.id}
-					class:hit={matches(seg.text)}
-					class:dimmed={find.trim() && !matches(seg.text)}
-				>
+				<div class="segment" class:playing={playingSegmentId === seg.id}>
 					<button
 						class="stamp"
+						class:active={playingSegmentId === seg.id}
 						disabled={!app.playerLoaded}
-						title={app.playerLoaded ? 'Seek here' : 'No stored audio for this transcript'}
+						title={app.playerLoaded ? 'Click to seek' : 'No stored audio for this transcript'}
 						onclick={() => app.seek(seg.start)}
 					>
-						[{ts(seg.start)}]
+						{ts(seg.start)}
 					</button>
 					{#if editingId === seg.id}
 						<textarea
@@ -134,11 +134,13 @@
 							aria-label="Edit segment text"
 						></textarea>
 					{:else}
-						<button class="text" onclick={() => beginEdit(seg.id, seg.text)}>
+						<button
+							class="text"
+							class:hit={matches(seg.text)}
+							title={seg.originalText !== undefined ? `Original: ${seg.originalText}` : undefined}
+							onclick={() => beginEdit(seg.id, seg.text)}
+						>
 							{seg.text}
-							{#if seg.originalText !== undefined}
-								<span class="edited" title={`engine: ${seg.originalText}`}>·edited</span>
-							{/if}
 						</button>
 					{/if}
 				</div>
@@ -148,17 +150,10 @@
 		{#if app.playerLoaded}
 			<PlayerBar />
 		{/if}
-	{:else}
-		<div class="empty">
-			<pre aria-hidden="true">{`╔══════════════════════════╗
-║                          ║
-║   SELECT A TRANSCRIPT    ║
-║   or start a recording   ║
-║                          ║
-╚══════════════════════════╝`}</pre>
-		</div>
-	{/if}
-</section>
+	</div>
+{:else}
+	<!-- Home state is rendered by the page (DropZone). -->
+{/if}
 
 <style>
 	.editor {
@@ -166,144 +161,115 @@
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
-		background: var(--bg);
+		min-height: 0;
 	}
 
-	.doc-head {
-		padding: 18px 24px 14px;
-		border-bottom: 1px solid var(--hairline);
+	.head {
+		padding: 4px 20px 12px;
+		border-bottom: 1px solid var(--border);
 	}
 
 	.title {
 		width: 100%;
-		margin: 0 0 8px;
+		margin: 0 0 10px;
 		padding: 0;
 		background: transparent;
 		border: none;
 		outline: none;
-		font-family: var(--mono);
+		font-family: var(--font);
 		font-size: 16px;
 		font-weight: 600;
-		letter-spacing: 0.04em;
-		color: var(--text);
-		caret-color: var(--cyan);
-	}
-
-	.title:focus {
-		border-bottom: 1px solid var(--cyan-dim);
-	}
-
-	.meta-row {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
+		color: var(--label-primary);
 	}
 
 	.chips {
 		display: flex;
-		gap: 8px;
-	}
-
-	.chip {
-		font-size: 10px;
-		letter-spacing: 0.14em;
-		padding: 2px 8px;
-		border: 1px solid var(--hairline);
-		color: var(--text-dim);
-	}
-
-	.chip.green {
-		color: var(--green);
-		border-color: var(--green-dim);
-	}
-
-	.find {
-		display: flex;
-		align-items: center;
+		flex-wrap: wrap;
 		gap: 6px;
 	}
 
-	.find .prompt {
-		color: var(--cyan-dim);
-		font-size: 12px;
+	.chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 3px 8px;
+		background: var(--surface-elevated);
+		border: 1px solid var(--border-strong);
+		border-radius: 999px;
+		font-size: 11px;
+		font-weight: 500;
+		color: var(--label-secondary);
+		white-space: nowrap;
 	}
 
-	.find input {
-		width: 120px;
+	.chip.find input {
+		width: 60px;
 		background: transparent;
 		border: none;
-		border-bottom: 1px solid var(--hairline);
 		outline: none;
-		font-family: var(--mono);
+		font-family: var(--font);
 		font-size: 11px;
-		color: var(--text);
-		caret-color: var(--cyan);
-		padding: 2px 0;
+		color: var(--label-primary);
 	}
 
-	.find input:focus {
-		border-bottom-color: var(--cyan-dim);
+	.chip.find input::placeholder {
+		color: var(--label-tertiary);
 	}
 
-	.find .count {
-		font-size: 10px;
-		color: var(--green);
+	.chip.find.focused {
+		border-color: var(--accent-focus);
 	}
 
-	.find .count.none {
-		color: var(--red);
+	.counter {
+		font-variant-numeric: tabular-nums;
+		color: var(--label-secondary);
+	}
+
+	.counter.none {
+		color: var(--label-tertiary);
 	}
 
 	.segments {
 		flex: 1;
 		overflow-y: auto;
-		padding: 16px 24px;
+		padding: 12px 16px;
 	}
 
 	.segment {
 		display: flex;
-		gap: 12px;
-		padding: 6px 8px 6px 10px;
-		line-height: 1.55;
-		border-left: 2px solid transparent;
-		transition:
-			border-color var(--t-fast) var(--ease),
-			background var(--t-fast) var(--ease),
-			opacity var(--t-fast) var(--ease);
+		gap: 10px;
+		padding: 4px 6px;
+		border-radius: 4px;
+		line-height: 1.5;
 	}
 
 	.segment.playing {
-		border-left-color: var(--cyan);
-		background: var(--cyan-wash);
+		background: var(--active-segment);
 	}
 
-	.segment.hit {
-		background: var(--cyan-wash);
-	}
-
-	.segment.dimmed {
-		opacity: 0.35;
+	.segment:hover:not(.playing) {
+		background: var(--surface-elevated);
 	}
 
 	.stamp {
 		flex: none;
+		width: 64px;
 		padding: 0;
 		background: none;
 		border: none;
 		font-family: var(--mono);
-		font-size: 12px;
-		color: var(--green);
+		font-size: 11px;
+		text-align: right;
+		color: var(--label-tertiary);
 		cursor: pointer;
-		transition: text-shadow var(--t-fast) var(--ease);
+		line-height: inherit;
 	}
 
-	.stamp:hover:not(:disabled) {
-		text-shadow: var(--glow-green);
+	.stamp.active {
+		color: var(--accent);
 	}
 
 	.stamp:disabled {
-		color: var(--text-dim);
 		cursor: default;
 	}
 
@@ -312,46 +278,32 @@
 		padding: 0;
 		background: none;
 		border: none;
-		font-family: var(--mono);
-		font-size: 13px;
-		color: var(--text);
+		font-family: var(--font);
+		font-size: 14px;
+		line-height: 1.5;
+		color: var(--label-primary);
 		text-align: left;
-		line-height: 1.55;
 		cursor: text;
 		user-select: text;
 	}
 
-	.edited {
-		margin-left: 8px;
-		font-size: 10px;
-		color: var(--text-dim);
+	.text.hit {
+		background: var(--find-match);
+		color: #000;
+		border-radius: 2px;
 	}
 
 	textarea {
 		flex: 1;
-		background: var(--panel);
-		border: 1px solid var(--cyan-dim);
+		background: var(--surface-elevated);
+		border: 1px solid var(--accent-focus);
+		border-radius: 4px;
 		outline: none;
-		font-family: var(--mono);
-		font-size: 13px;
-		line-height: 1.55;
-		color: var(--text);
-		caret-color: var(--cyan);
+		font-family: var(--font);
+		font-size: 14px;
+		line-height: 1.5;
+		color: var(--label-primary);
 		padding: 2px 6px;
 		resize: none;
-	}
-
-	.empty {
-		flex: 1;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.empty pre {
-		margin: 0;
-		font-size: 12px;
-		line-height: 1.5;
-		color: var(--text-dim);
 	}
 </style>

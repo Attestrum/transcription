@@ -3,42 +3,44 @@
 
 	const sheet = $derived(app.modelSheet);
 
-	function bar(bytes: number, total: number): string {
-		const width = 28;
-		const filled = total > 0 ? Math.round((bytes / total) * width) : 0;
-		return '█'.repeat(filled) + '░'.repeat(width - filled);
+	function mb(n: number): string {
+		return (n / (1024 * 1024)).toFixed(1);
 	}
 
 	function pct(bytes: number, total: number): number {
-		return total > 0 ? Math.floor((bytes / total) * 100) : 0;
-	}
-
-	function mb(n: number): string {
-		return (n / (1024 * 1024)).toFixed(1);
+		return total > 0 ? Math.min((bytes / total) * 100, 100) : 0;
 	}
 </script>
 
 {#if sheet}
 	<div class="scrim" role="dialog" aria-modal="true" aria-label="Model download">
 		<div class="sheet">
-			<p class="line dim">&gt; model {sheet.modelId} required — fetching from huggingface.co</p>
-			<p class="line dim">&gt; ggml-{sheet.modelId}.bin · {mb(sheet.sizeBytes)} MB</p>
-			<p class="line">
-				{bar(sheet.bytes, sheet.total)}
-				{pct(sheet.bytes, sheet.total)}%
+			<h2>Downloading {sheet.modelId} model</h2>
+			<p class="desc">
+				One-time download from Hugging Face — {mb(sheet.sizeBytes)} MB. Verified before use;
+				transcription starts automatically.
+			</p>
+			<div class="bar">
+				<div class="fill" style:width="{pct(sheet.bytes, sheet.total)}%"></div>
+			</div>
+			<p class="progress">
+				{mb(sheet.bytes)} of {mb(sheet.total)} MB
 				{#if sheet.bytesPerSec > 0}· {mb(sheet.bytesPerSec)} MB/s{/if}
 			</p>
 			{#if sheet.error}
-				<p class="line error">! {sheet.error.message}</p>
-				<p class="line dim">download resumes from where it stopped — try again</p>
+				<p class="error">{sheet.error.message}</p>
+				<p class="desc">The download resumes from where it stopped — try again.</p>
 			{:else if sheet.verified}
-				<p class="line verified">SHA-256 … VERIFIED ✓</p>
-				<p class="line dim">starting transcription<span class="cursor">▮</span></p>
-			{:else}
-				<p class="line dim">SHA-256 streaming…<span class="cursor">▮</span></p>
+				<p class="verified">
+					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+						stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M20 6 9 17l-5-5" />
+					</svg>
+					Checksum verified
+				</p>
 			{/if}
-			<button class="dismiss" onclick={() => app.dismissModelSheet()}>
-				{sheet.error ? '[ CLOSE ]' : '[ CANCEL ]'}
+			<button class="cancel" onclick={() => app.dismissModelSheet()}>
+				{sheet.error ? 'Close' : 'Cancel'}
 			</button>
 		</div>
 	</div>
@@ -52,67 +54,83 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: rgba(10, 14, 20, 0.82);
+		background: rgba(0, 0, 0, 0.45);
 	}
 
 	.sheet {
-		width: min(560px, 90vw);
-		padding: 24px 28px;
-		background: var(--panel);
-		border: 1px solid var(--hairline);
-		box-shadow: var(--glow-cyan-strong);
+		width: 440px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding: 28px;
+		background: var(--surface-base);
+		border: 1px solid var(--border-strong);
+		border-radius: 12px;
+		box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
 	}
 
-	.line {
-		margin: 0 0 10px;
+	h2 {
+		margin: 0;
+		font-size: 16px;
+		font-weight: 600;
+	}
+
+	.desc {
+		margin: 0;
 		font-size: 12px;
-		letter-spacing: 0.06em;
-		color: var(--cyan);
-		white-space: nowrap;
+		line-height: 1.45;
+		color: var(--label-secondary);
+	}
+
+	.bar {
+		height: 6px;
+		border-radius: 3px;
+		background: var(--surface-highlight);
 		overflow: hidden;
 	}
 
-	.line.dim {
-		color: var(--text-dim);
+	.fill {
+		height: 100%;
+		border-radius: 3px;
+		background: var(--accent);
+		transition: width 0.25s linear;
 	}
 
-	.line.verified {
-		color: var(--green);
-		text-shadow: var(--glow-green);
-	}
-
-	.line.error {
-		color: var(--red);
-		white-space: normal;
-	}
-
-	.cursor {
-		color: var(--green);
-		margin-left: 5px;
-		animation: cursor-blink 1.2s step-end infinite;
-	}
-
-	.dismiss {
-		margin-top: 8px;
-		padding: 6px 12px;
-		background: transparent;
-		border: 1px solid var(--hairline);
-		font-family: var(--mono);
+	.progress {
+		margin: 0;
 		font-size: 11px;
-		letter-spacing: 0.16em;
-		color: var(--text-dim);
+		color: var(--label-secondary);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.verified {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		margin: 0;
+		font-size: 12px;
+		font-weight: 500;
+		color: var(--green);
+	}
+
+	.error {
+		margin: 0;
+		font-size: 12px;
+		color: var(--red);
+	}
+
+	.cancel {
+		align-self: flex-end;
+		padding: 7px 14px;
+		background: var(--surface-elevated);
+		border: 1px solid var(--border-strong);
+		border-radius: 7px;
+		font-size: 13px;
+		color: var(--label-primary);
 		cursor: pointer;
-		transition: color var(--t-fast) var(--ease);
 	}
 
-	.dismiss:hover {
-		color: var(--cyan);
-		border-color: var(--cyan-dim);
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.cursor {
-			animation: none;
-		}
+	.cancel:hover {
+		background: var(--surface-highlight);
 	}
 </style>

@@ -1,63 +1,47 @@
 <script lang="ts">
 	import { app } from '../app-state.svelte';
 
-	let canvas = $state<HTMLCanvasElement | null>(null);
-
 	const duration = $derived(app.selected?.duration ?? 0);
 
+	/** "M:SS" / "H:MM:SS", tabular digits — AudioPlayerBar's format. */
 	function fmt(secs: number): string {
-		const m = Math.floor(secs / 60);
-		const s = secs % 60;
-		return `${String(m).padStart(2, '0')}:${s.toFixed(1).padStart(4, '0')}`;
+		const t = Math.floor(secs);
+		const h = Math.floor(t / 3600);
+		const m = Math.floor((t % 3600) / 60);
+		const s = t % 60;
+		const pad = (n: number) => String(n).padStart(2, '0');
+		return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
 	}
-
-	function seekFromPointer(e: PointerEvent) {
-		if (!canvas || duration <= 0) return;
-		const rect = canvas.getBoundingClientRect();
-		const frac = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
-		app.seek(frac * duration);
-	}
-
-	// Redraw the peaks strip whenever peaks or position change.
-	$effect(() => {
-		const el = canvas;
-		if (!el) return;
-		const peaks = app.peaks;
-		const playedFrac = duration > 0 ? app.position / duration : 0;
-		const dpr = window.devicePixelRatio || 1;
-		const w = el.clientWidth;
-		const h = el.clientHeight;
-		el.width = w * dpr;
-		el.height = h * dpr;
-		const ctx = el.getContext('2d');
-		if (!ctx) return;
-		ctx.scale(dpr, dpr);
-		ctx.clearRect(0, 0, w, h);
-		const n = peaks.length;
-		if (n === 0) return;
-		const mid = h / 2;
-		const barW = w / n;
-		const played = getComputedStyle(el).getPropertyValue('--cyan').trim() || '#7fe0ff';
-		const rest = 'rgba(127, 224, 255, 0.25)';
-		for (let i = 0; i < n; i++) {
-			const amp = Math.max(peaks[i] * (h / 2 - 1), 1);
-			ctx.fillStyle = i / n <= playedFrac ? played : rest;
-			ctx.fillRect(i * barW, mid - amp, Math.max(barW - 0.5, 0.5), amp * 2);
-		}
-	});
 </script>
 
 <div class="player">
-	<button class="toggle" onclick={() => app.togglePlayback()}>
-		{app.playing ? '[ ⏸ ]' : '[ ▶ ]'}
+	<button
+		class="toggle"
+		title={app.playing ? 'Pause (Space)' : 'Play (Space)'}
+		aria-label={app.playing ? 'Pause' : 'Play'}
+		onclick={() => app.togglePlayback()}
+	>
+		{#if app.playing}
+			<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+				<rect x="5" y="4" width="5" height="16" rx="1" /><rect x="14" y="4" width="5" height="16" rx="1" />
+			</svg>
+		{:else}
+			<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+				<path d="M7 4.5v15a1 1 0 0 0 1.5.87l13-7.5a1 1 0 0 0 0-1.74l-13-7.5A1 1 0 0 0 7 4.5z" />
+			</svg>
+		{/if}
 	</button>
-	<span class="time">{fmt(app.position)}</span>
-	<canvas
-		bind:this={canvas}
-		class="strip"
-		onpointerdown={seekFromPointer}
-		aria-label="Seek within the recording"
-	></canvas>
+	<span class="time current">{fmt(app.position)}</span>
+	<input
+		class="scrubber"
+		type="range"
+		min="0"
+		max={Math.max(duration, 0.01)}
+		step="0.1"
+		value={app.position}
+		oninput={(e) => app.seek(Number((e.target as HTMLInputElement).value))}
+		aria-label="Seek"
+	/>
 	<span class="time total">{fmt(duration)}</span>
 </div>
 
@@ -66,42 +50,61 @@
 		display: flex;
 		align-items: center;
 		gap: 12px;
-		height: 52px;
+		height: 50px;
 		padding: 0 16px;
-		border-top: 1px solid var(--hairline);
-		background: var(--panel);
+		border-top: 1px solid var(--border);
+		flex: none;
 	}
 
 	.toggle {
-		padding: 4px 6px;
-		background: none;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
 		border: none;
-		font-family: var(--mono);
-		font-size: 13px;
-		color: var(--cyan);
+		border-radius: 7px;
+		background: var(--accent);
+		color: #fff;
 		cursor: pointer;
-		transition: text-shadow var(--t-fast) var(--ease);
 	}
 
 	.toggle:hover {
-		text-shadow: var(--glow-cyan);
+		filter: brightness(1.1);
+	}
+
+	.toggle:active {
+		filter: brightness(0.9);
 	}
 
 	.time {
+		width: 48px;
 		font-size: 11px;
-		letter-spacing: 0.1em;
-		color: var(--green);
-		min-width: 58px;
-		text-align: center;
+		color: var(--label-secondary);
+		font-variant-numeric: tabular-nums;
 	}
 
-	.time.total {
-		color: var(--text-dim);
+	.time.current {
+		text-align: right;
 	}
 
-	.strip {
+	.scrubber {
 		flex: 1;
-		height: 36px;
+		appearance: none;
+		height: 4px;
+		border-radius: 2px;
+		background: var(--surface-highlight);
+		outline: none;
 		cursor: pointer;
+	}
+
+	.scrubber::-webkit-slider-thumb {
+		appearance: none;
+		width: 13px;
+		height: 13px;
+		border-radius: 50%;
+		background: #fff;
+		border: none;
+		box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
 	}
 </style>

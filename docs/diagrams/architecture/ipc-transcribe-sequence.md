@@ -2,7 +2,7 @@
 title: "IPC contract — import-and-transcribe round trip"
 models: "src-tauri/src, src/lib/api"
 source_of_truth: code
-last_verified: a5ad884 2026-06-12
+last_verified: f0b9925 2026-06-12
 diagram_type: sequenceDiagram
 ---
 
@@ -56,7 +56,7 @@ sequenceDiagram
 
 Command surface (full list): `list_models` / `download_model` /
 `cancel_download` / `delete_model` · `list_input_devices` / `start_recording`
-/ `stop_recording` · `transcribe` / `cancel_job` · `list_transcripts` /
+/ `stop_recording` / `discard_recording` · `transcribe` / `cancel_job` · `list_transcripts` /
 `get_transcript` / `update_transcript` / `rename_transcript` /
 `delete_transcript` · `player_load` / `player_play` / `player_pause` /
 `player_seek` / `player_peaks` (waveform buckets for the scrubber) ·

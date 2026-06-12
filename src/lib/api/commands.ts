@@ -30,6 +30,7 @@ export const listInputDevices = () => invoke<InputDevice[]>('list_input_devices'
 export const startRecording = (deviceId?: string) =>
 	invoke<void>('start_recording', { deviceId: deviceId ?? null });
 export const stopRecording = () => invoke<RecordingInfo>('stop_recording');
+export const discardRecording = () => invoke<void>('discard_recording');
 
 // transcription
 export const transcribe = (source: TranscribeSource, modelId: string, language?: string) =>
