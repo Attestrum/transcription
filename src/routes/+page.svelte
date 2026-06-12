@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { productInfo, type ProductInfo } from '$lib/api';
+	import { onPlaybackPosition, productInfo, type ProductInfo } from '$lib/api';
 	import { app } from '$lib/app-state.svelte';
 	import TopBar from '$lib/components/TopBar.svelte';
 	import LibraryPane from '$lib/components/LibraryPane.svelte';
@@ -12,6 +12,13 @@
 		productInfo()
 			.then((v) => (info = v))
 			.catch(() => {});
+		const unlisten = onPlaybackPosition((p) => {
+			app.position = p.secs;
+			app.playing = p.playing;
+		});
+		return () => {
+			unlisten.then((fn) => fn()).catch(() => {});
+		};
 	});
 
 	// The FX setting drives the scan-line overlay in tokens.css.

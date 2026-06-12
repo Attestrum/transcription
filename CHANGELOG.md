@@ -5,6 +5,11 @@ for the full record see the git log.
 
 ## [Unreleased]
 
+- Editor + playback: recordings play back through the Rust side (rodio over
+  the archive WAV — never the webview's audio stack), with click-to-seek
+  timestamps, a playing-segment highlight, a waveform-strip scrubber built
+  from precomputed peaks, inline segment editing that preserves the engine's
+  original words, inline title rename, and find-in-transcript.
 - CI: diagram gate — frontmatter completeness, `last_verified` validity and
   freshness, code-diagram path references, drift (code named in a diagram's
   `models:` changing without the diagram), and a Mermaid parse of every

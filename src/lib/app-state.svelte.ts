@@ -23,6 +23,12 @@ class AppState {
 	/** Most recent surfaced error; toast-style, dismissed by the next action. */
 	lastError = $state<AppError | null>(null);
 
+	/** Playback — meaningful only while `selected` has stored audio. */
+	playerLoaded = $state(false);
+	position = $state(0);
+	playing = $state(false);
+	peaks = $state<number[]>([]);
+
 	get filteredTranscripts(): TranscriptMeta[] {
 		const q = this.search.trim().toLowerCase();
 		if (!q) return this.transcripts;
@@ -57,6 +63,62 @@ class AppState {
 	async select(id: string): Promise<void> {
 		try {
 			this.selected = await api.getTranscript(id);
+		} catch (e) {
+			this.fail(e);
+			return;
+		}
+		// Recordings come with their archive WAV loaded and the scrubber
+		// peaks ready; imports have no stored audio in v1.
+		this.playerLoaded = false;
+		this.position = 0;
+		this.playing = false;
+		this.peaks = [];
+		if (this.selected?.audioRelativePath) {
+			try {
+				await api.playerLoad(id);
+				this.playerLoaded = true;
+				this.peaks = await api.playerPeaks(id);
+			} catch (e) {
+				this.fail(e);
+			}
+		}
+	}
+
+	async togglePlayback(): Promise<void> {
+		if (!this.playerLoaded) return;
+		try {
+			if (this.playing) await api.playerPause();
+			else await api.playerPlay();
+		} catch (e) {
+			this.fail(e);
+		}
+	}
+
+	async seek(secs: number): Promise<void> {
+		if (!this.playerLoaded) return;
+		try {
+			await api.playerSeek(secs);
+		} catch (e) {
+			this.fail(e);
+		}
+	}
+
+	/** Persist one segment edit; the Rust side enforces the originalText rule. */
+	async editSegment(segmentId: number, text: string): Promise<void> {
+		if (!this.selected) return;
+		try {
+			this.selected = await api.updateTranscript(this.selected.id, segmentId, text);
+			await this.refreshTranscripts();
+		} catch (e) {
+			this.fail(e);
+		}
+	}
+
+	async rename(title: string): Promise<void> {
+		if (!this.selected || !title.trim() || title === this.selected.title) return;
+		try {
+			this.selected = await api.renameTranscript(this.selected.id, title.trim());
+			await this.refreshTranscripts();
 		} catch (e) {
 			this.fail(e);
 		}

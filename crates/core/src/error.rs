@@ -45,6 +45,9 @@ pub enum CoreError {
     #[error("capture: {0}")]
     Capture(String),
 
+    #[error("playback: {0}")]
+    Playback(String),
+
     #[error("transcript not found: {0}")]
     TranscriptNotFound(String),
 

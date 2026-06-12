@@ -2,7 +2,7 @@
 title: "Attestrum Transcription — process and module overview"
 models: "crates/core, src-tauri/src, src/lib"
 source_of_truth: diagram
-last_verified: 4afe42d 2026-06-12
+last_verified: 064036e 2026-06-12
 diagram_type: flowchart
 ---
 
@@ -68,10 +68,9 @@ Privacy invariant: the **only** network call in the entire app is the model
 download (cyan path above). Audio, transcripts, and metadata never leave the
 machine — `SECURITY.md` treats any violation as a security issue, not a bug.
 
-Implementation status: `crates/core` is fully implemented except rodio
-playback (M8); the shell's commands/state/events are implemented except
-`player_*`; transcription job queues live in the shell's `AppState`
-(`jobs` map + per-job threads), not in core `engine/`. The webview has the
-shell, library, and editor panes; record/import surfaces land in M8–M9.
-This file stays `source_of_truth: diagram` until the record/import and
-playback nodes exist in code.
+Implementation status: `crates/core` and the shell's command/event surface
+are fully implemented; transcription job queues live in the shell's
+`AppState` (`jobs` map + per-job threads), not in core `engine/`. The
+webview has the shell, library, editor, and player; the record/import
+surfaces (waveform, drop zone, model sheet) land in M9 — this file stays
+`source_of_truth: diagram` until they do.

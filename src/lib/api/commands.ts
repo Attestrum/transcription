@@ -45,6 +45,14 @@ export const renameTranscript = (id: string, title: string) =>
 	invoke<Transcript>('rename_transcript', { id, title });
 export const deleteTranscript = (id: string) => invoke<void>('delete_transcript', { id });
 
+// player
+export const playerLoad = (id: string) => invoke<void>('player_load', { id });
+export const playerPlay = () => invoke<void>('player_play');
+export const playerPause = () => invoke<void>('player_pause');
+export const playerSeek = (secs: number) => invoke<void>('player_seek', { secs });
+export const playerPeaks = (id: string, buckets?: number) =>
+	invoke<number[]>('player_peaks', { id, buckets: buckets ?? null });
+
 // export
 export const exportTranscript = (id: string, format: ExportFormat, destPath: string) =>
 	invoke<void>('export_transcript', { id, format, destPath });

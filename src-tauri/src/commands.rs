@@ -2,9 +2,8 @@
 //! `docs/diagrams/architecture/ipc-transcribe-sequence.md`. Commands are
 //! request/response; everything long-running streams back as events:
 //! `model:download:{progress,done,error}` · `record:level` ·
-//! `transcribe:{segment,progress,done,error,cancelled}`.
-//!
-//! Player commands (`player_*`) land with the rodio playback work (M8).
+//! `transcribe:{segment,progress,done,error,cancelled}` ·
+//! `playback:position`.
 
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -584,6 +583,81 @@ pub fn rename_transcript(
 #[tauri::command]
 pub fn delete_transcript(state: State<'_, AppState>, id: String) -> CmdResult<()> {
     Ok(state.store.lock().unwrap().delete(&id)?)
+}
+
+// ----------------------------------------------------------------- player
+
+/// Load a transcript's archive WAV into the player (paused, position 0).
+/// Only recordings have stored audio in v1.
+#[tauri::command]
+pub fn player_load(app: AppHandle, state: State<'_, AppState>, id: String) -> CmdResult<()> {
+    let (wav_path, duration) = {
+        let store = state.store.lock().unwrap();
+        let t = store.load(&id)?;
+        let rel = t
+            .audio_relative_path
+            .ok_or_else(|| AppError::bad_request(format!("transcript {id} has no stored audio")))?;
+        (store.audio_dir().join(rel), t.duration)
+    };
+    let mut player = state.player.lock().unwrap();
+    if player.is_none() {
+        *player = Some(audio::PlayerHandle::spawn(move |pos| {
+            let _ = app.emit("playback:position", pos);
+        })?);
+    }
+    player
+        .as_ref()
+        .expect("just created")
+        .load(&wav_path, duration)?;
+    Ok(())
+}
+
+fn with_player<T>(
+    state: &State<'_, AppState>,
+    f: impl FnOnce(&audio::PlayerHandle) -> Result<T, CoreError>,
+) -> CmdResult<T> {
+    let player = state.player.lock().unwrap();
+    let p = player
+        .as_ref()
+        .ok_or_else(|| AppError::bad_request("nothing loaded — call player_load first"))?;
+    Ok(f(p)?)
+}
+
+#[tauri::command]
+pub fn player_play(state: State<'_, AppState>) -> CmdResult<()> {
+    with_player(&state, |p| p.play())
+}
+
+#[tauri::command]
+pub fn player_pause(state: State<'_, AppState>) -> CmdResult<()> {
+    with_player(&state, |p| p.pause())
+}
+
+#[tauri::command]
+pub fn player_seek(state: State<'_, AppState>, secs: f64) -> CmdResult<()> {
+    with_player(&state, |p| p.seek(secs))
+}
+
+/// Max-amplitude buckets from the transcript's archive WAV for the
+/// scrubber strip.
+#[tauri::command]
+pub fn player_peaks(
+    state: State<'_, AppState>,
+    id: String,
+    buckets: Option<u32>,
+) -> CmdResult<Vec<f32>> {
+    let wav_path = {
+        let store = state.store.lock().unwrap();
+        let t = store.load(&id)?;
+        let rel = t
+            .audio_relative_path
+            .ok_or_else(|| AppError::bad_request(format!("transcript {id} has no stored audio")))?;
+        store.audio_dir().join(rel)
+    };
+    Ok(audio::waveform_peaks(
+        &wav_path,
+        buckets.unwrap_or(600) as usize,
+    )?)
 }
 
 // ----------------------------------------------------------------- export

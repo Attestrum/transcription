@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
-use attestrum_transcription_core::audio::RecordingSession;
+use attestrum_transcription_core::audio::{PlayerHandle, RecordingSession};
 use attestrum_transcription_core::engine::WhisperEngine;
 use attestrum_transcription_core::store::Store;
 
@@ -34,6 +34,8 @@ pub struct AppState {
     next_job_id: AtomicU64,
     pub recording: Mutex<Option<RecordingSession>>,
     pub last_recording: Mutex<Option<FinishedRecording>>,
+    /// Created on the first `player_load`; lives for the rest of the run.
+    pub player: Mutex<Option<PlayerHandle>>,
 }
 
 impl AppState {
@@ -47,6 +49,7 @@ impl AppState {
             next_job_id: AtomicU64::new(1),
             recording: Mutex::new(None),
             last_recording: Mutex::new(None),
+            player: Mutex::new(None),
         }
     }
 

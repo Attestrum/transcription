@@ -22,6 +22,7 @@ export type ErrorKind =
 	| 'empty_audio'
 	| 'audio_device'
 	| 'capture'
+	| 'playback'
 	| 'transcript_not_found'
 	| 'store'
 	| 'engine'
@@ -151,6 +152,13 @@ export interface TranscriptMeta {
 	modelId: string;
 	language: string;
 	hasAudio: boolean;
+}
+
+// ---------------------------------------------------------------- player
+
+export interface PlaybackPosition {
+	secs: number;
+	playing: boolean;
 }
 
 // ---------------------------------------------------------------- export

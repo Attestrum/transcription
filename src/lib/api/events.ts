@@ -6,6 +6,7 @@
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import type {
 	AppError,
+	PlaybackPosition,
 	DoneEvent,
 	DownloadProgressEvent,
 	JobErrorEvent,
@@ -30,3 +31,5 @@ export const onTranscribeProgress = on<ProgressEvent>('transcribe:progress');
 export const onTranscribeDone = on<DoneEvent>('transcribe:done');
 export const onTranscribeCancelled = on<number>('transcribe:cancelled');
 export const onTranscribeError = on<JobErrorEvent>('transcribe:error');
+
+export const onPlaybackPosition = on<PlaybackPosition>('playback:position');

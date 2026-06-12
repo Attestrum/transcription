@@ -1,8 +1,8 @@
 ---
 title: "IPC contract — import-and-transcribe round trip"
-models: "src-tauri/src/lib.rs, src/lib/api"
-source_of_truth: diagram
-last_verified: 767220d 2026-06-12
+models: "src-tauri/src, src/lib/api"
+source_of_truth: code
+last_verified: 064036e 2026-06-12
 diagram_type: sequenceDiagram
 ---
 
@@ -59,14 +59,13 @@ Command surface (full list): `list_models` / `download_model` /
 / `stop_recording` · `transcribe` / `cancel_job` · `list_transcripts` /
 `get_transcript` / `update_transcript` / `rename_transcript` /
 `delete_transcript` · `player_load` / `player_play` / `player_pause` /
-`player_seek` · `export_transcript` · `get_settings` / `set_settings` ·
-`product_info`.
+`player_seek` / `player_peaks` (waveform buckets for the scrubber) ·
+`export_transcript` · `get_settings` / `set_settings` · `product_info`.
 
 Event surface: `model:download:{progress,done,error}` · `record:level`
 (carries `elapsedSecs`) · `transcribe:{segment,progress,done,error,cancelled}`
 · `playback:position`.
 
-Implementation status: everything above is implemented in
-`src-tauri/src/commands.rs` + `src/lib/api/` EXCEPT the `player_*` commands
-and `playback:position`, which land with the rodio playback work (M8). This
-file stays `source_of_truth: diagram` until then.
+The full surface above — including `player_*` and `playback:position`
+(`docs/diagrams/player/player-state.md`) — is implemented in
+`src-tauri/src/commands.rs` + `src/lib/api/`.

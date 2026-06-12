@@ -2,7 +2,7 @@
 title: "Transcription pipeline — record and import paths to stored transcript"
 models: "crates/core/src/audio, crates/core/src/engine, crates/core/src/store"
 source_of_truth: code
-last_verified: b1bd80d 2026-06-12
+last_verified: 064036e 2026-06-12
 diagram_type: flowchart
 ---
 
