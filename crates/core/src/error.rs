@@ -30,6 +30,15 @@ pub enum CoreError {
     #[error("model file not found: {0}")]
     ModelNotFound(PathBuf),
 
+    #[error("unsupported or unreadable media file: {0}")]
+    UnsupportedMedia(PathBuf),
+
+    #[error("decode failed: {0}")]
+    Decode(String),
+
+    #[error("file decoded to zero audio samples: {0}")]
+    EmptyAudio(PathBuf),
+
     #[error("engine: {0}")]
     Engine(String),
 

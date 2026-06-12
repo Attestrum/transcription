@@ -5,6 +5,10 @@ for the full record see the git log.
 
 ## [Unreleased]
 
+- Audio import: wav / mp3 / m4a / mp4 / mov / ogg / flac / mkv decode to the
+  whisper PCM contract (16 kHz mono f32) via symphonia and rubato, with
+  progress, cancellation, per-frame checksum verification, and typed errors
+  for unsupported, corrupt, and empty media.
 - Whisper engine: streaming segment callbacks, progress reporting, and
   cooperative cancellation over whisper.cpp (Metal on macOS, CPU on Windows),
   with real-model integration tests run in CI on both platforms.

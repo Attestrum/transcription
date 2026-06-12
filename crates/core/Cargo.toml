@@ -17,6 +17,8 @@ hex = "0.4"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream"] }
 sha2 = "0.10"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "fs", "io-util"] }
+symphonia = { version = "0.6.0", features = ["mp3", "aac", "alac", "isomp4"] }
+rubato = "3.0.0"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 whisper-rs = { version = "0.16", features = ["metal"] }
