@@ -3,7 +3,12 @@
 //! Everything that is not Tauri IPC glue lives here so it can be unit-tested
 //! without spawning a webview: audio capture and decoding, Whisper inference,
 //! the transcript store, and exporters. The `src-tauri` crate is a thin shell
-//! over this one.
+//! over this one. Architecture contract: `docs/diagrams/architecture/app-overview.md`.
+
+pub mod error;
+pub mod models;
+
+pub use error::CoreError;
 
 /// User-facing product name, shared by the shell and exporters.
 pub const PRODUCT_NAME: &str = "Attestrum Transcription";
